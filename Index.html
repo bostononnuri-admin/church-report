@@ -444,23 +444,27 @@
 
   // ── 관리자: 데이터 로드 ──
   var adminData = [];
-  async function loadAdminData() {
+  function loadAdminData() {
     var container = document.getElementById("adminTableContainer");
     container.innerHTML = "<div class='admin-loading'>데이터를 불러오는 중...</div>";
-    try {
-      var url = SCRIPT_URL + "?action=getData&pw=" + encodeURIComponent(ADMIN_PW) + "&t=" + Date.now();
-      var res = await fetch(url);
-      var text = await res.text();
-      try {
-        var json = JSON.parse(text);
-        adminData = json.data || [];
-        renderAdminTable();
-      } catch(parseErr) {
-        container.innerHTML = "<div class='admin-empty'>❌ 응답 파싱 오류:<br><small>" + text.substring(0,200) + "</small></div>";
-      }
-    } catch(err) {
-      container.innerHTML = "<div class='admin-empty'>❌ 네트워크 오류: " + err.message + "<br><br>Apps Script 재배포 후 다시 시도해 주세요.</div>";
-    }
+
+    // 기존 콜백 스크립트 태그 제거
+    var old = document.getElementById("jsonp-script");
+    if (old) old.remove();
+
+    // JSONP 방식으로 데이터 로드 (CORS 우회)
+    window.__adminDataCallback = function(json) {
+      adminData = json.data || [];
+      renderAdminTable();
+    };
+
+    var script = document.createElement("script");
+    script.id = "jsonp-script";
+    script.onerror = function() {
+      container.innerHTML = "<div class='admin-empty'>❌ 데이터를 불러오지 못했습니다.<br>Apps Script가 올바르게 배포됐는지 확인해 주세요.</div>";
+    };
+    script.src = SCRIPT_URL + "?action=getData&pw=" + encodeURIComponent(ADMIN_PW) + "&callback=__adminDataCallback&t=" + Date.now();
+    document.body.appendChild(script);
   }
 
   function renderAdminTable() {
