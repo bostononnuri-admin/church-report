@@ -465,6 +465,20 @@
 <!-- ───── TOAST ───── -->
 <div class="toast" id="toast"></div>
 
+<!-- ───── 중복 제출 확인 모달 ───── -->
+<div class="overlay" id="dupOverlay">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h3>⚠️ 중복 제출 확인</h3>
+    <p id="dupMsg" style="font-size:14px;color:#1A2440;line-height:1.7;margin-bottom:20px;"></p>
+    <div style="display:flex;gap:10px;">
+      <button class="btn-conf" id="dupCancelBtn"
+        style="background:var(--pale);color:var(--navy);border:1.5px solid var(--border);">취소</button>
+      <button class="btn-conf" id="dupConfirmBtn">확인 (덮어쓰기)</button>
+    </div>
+  </div>
+</div>
+
 <!-- ───── ADMIN FAB ───── -->
 <button class="fab" onclick="openAdmin()">🔐</button>
 
@@ -488,8 +502,7 @@
 
   <!-- 탭 -->
   <div class="adm-tabs">
-    <button class="adm-tab active" id="tab-date" onclick="switchTab('date')">📅 날짜별 조회</button>
-    <button class="adm-tab" id="tab-list" onclick="switchTab('list')">📋 전체 목록</button>
+    <button class="adm-tab active" id="tab-date">📅 날짜별 조회</button>
   </div>
 
   <!-- 날짜별 조회 -->
@@ -501,11 +514,7 @@
     <div id="dateSummary"></div>
   </div>
 
-  <!-- 전체 목록 -->
-  <div id="pane-list" class="adm-body" style="display:none;">
-    <button class="btn-ref" onclick="loadAdminData()">↻ 새로고침</button>
-    <div id="adminCards"></div>
-  </div>
+
 </div>
 
 <script>
@@ -533,27 +542,35 @@ const ADMIN_PW   = "4Federalst!";
 const SERVICE_2 = ["새벽"];
 const SERVICE_3 = ["예꿈", "꿈땅", "중등부", "고등부"];
 
+function sanitizeNatural(el) {
+  // 자연수(0 포함)만 허용 — 소수점, 음수, 문자 제거
+  let v = el.value.replace(/[^0-9]/g, "");
+  if (v.length > 1) v = v.replace(/^0+/, "") || "0";
+  el.value = v;
+}
+
 function updateCountFields() {
   const svc = document.getElementById("serviceType").value;
   const wrap = document.getElementById("countWrap");
+  const inp  = `type="number" min="0" step="1" pattern="[0-9]*" inputmode="numeric" placeholder="0"`;
 
   if (SERVICE_2.includes(svc)) {
     wrap.className = "cnt-grid g2-total";
     wrap.innerHTML = `
-      <div class="cnt-item"><label>현장</label><input class="cnt-inp sub-inp" id="cnt_onsite"  type="number" min="0" placeholder="0" oninput="calcTotal()"></div>
-      <div class="cnt-item"><label>온라인</label><input class="cnt-inp sub-inp" id="cnt_online" type="number" min="0" placeholder="0" oninput="calcTotal()"></div>
+      <div class="cnt-item"><label>현장</label><input class="cnt-inp sub-inp" id="cnt_onsite"  ${inp} oninput="sanitizeNatural(this);calcTotal()"></div>
+      <div class="cnt-item"><label>온라인</label><input class="cnt-inp sub-inp" id="cnt_online" ${inp} oninput="sanitizeNatural(this);calcTotal()"></div>
       <div class="cnt-item cnt-total-row"><label>합계</label><input class="cnt-inp cnt-total-disp" id="cnt_total" type="text" readonly placeholder="0"></div>`;
   } else if (SERVICE_3.includes(svc)) {
     wrap.className = "cnt-grid g3-total";
     wrap.innerHTML = `
-      <div class="cnt-item"><label>학생</label><input class="cnt-inp sub-inp" id="cnt_student" type="number" min="0" placeholder="0" oninput="calcTotal()"></div>
-      <div class="cnt-item"><label>교사</label><input class="cnt-inp sub-inp" id="cnt_teacher" type="number" min="0" placeholder="0" oninput="calcTotal()"></div>
-      <div class="cnt-item"><label>그외</label><input class="cnt-inp sub-inp" id="cnt_other"   type="number" min="0" placeholder="0" oninput="calcTotal()"></div>
+      <div class="cnt-item"><label>학생</label><input class="cnt-inp sub-inp" id="cnt_student" ${inp} oninput="sanitizeNatural(this);calcTotal()"></div>
+      <div class="cnt-item"><label>교사</label><input class="cnt-inp sub-inp" id="cnt_teacher" ${inp} oninput="sanitizeNatural(this);calcTotal()"></div>
+      <div class="cnt-item"><label>그외</label><input class="cnt-inp sub-inp" id="cnt_other"   ${inp} oninput="sanitizeNatural(this);calcTotal()"></div>
       <div class="cnt-item cnt-total-row"><label>합계</label><input class="cnt-inp cnt-total-disp" id="cnt_total" type="text" readonly placeholder="0"></div>`;
   } else {
     wrap.className = "cnt-grid g1";
     wrap.innerHTML = `
-      <div class="cnt-item"><label>총 인원</label><input class="cnt-inp" id="cnt_total" type="number" min="0" placeholder="0"></div>`;
+      <div class="cnt-item"><label>총 인원</label><input class="cnt-inp" id="cnt_total" ${inp} oninput="sanitizeNatural(this)"></div>`;
   }
 }
 
@@ -570,6 +587,19 @@ function calcTotal() {
 }
 
 // ── 제출 ──
+// ── 중복 확인 모달 ──
+function showDupModal(message, onConfirm) {
+  document.getElementById("dupMsg").textContent = message;
+  document.getElementById("dupOverlay").classList.add("open");
+  document.getElementById("dupConfirmBtn").onclick = function() {
+    document.getElementById("dupOverlay").classList.remove("open");
+    onConfirm();
+  };
+  document.getElementById("dupCancelBtn").onclick = function() {
+    document.getElementById("dupOverlay").classList.remove("open");
+  };
+}
+
 async function submitForm() {
   const reportDate  = document.getElementById("reportDate").value;
   const worshipDate = document.getElementById("worshipDate").value;
@@ -597,29 +627,44 @@ async function submitForm() {
   }
 
   const payload = {
-    action:      "submit",
-    reportDate,
-    worshipDate,
-    service,
-    total,
-    onsite,
-    online,
-    student,
-    teacher,
-    other,
-    signature:   sig
+    action: "submit", reportDate, worshipDate, service,
+    total, onsite, online, student, teacher, other, signature: sig
   };
 
+  // ── 중복 제출 체크 ──
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=출석보고`;
+    const res  = await fetch(url);
+    const text = await res.text();
+    const rows = parseCSV(text).slice(1); // 헤더 제외
+    const dup  = rows.find(r => {
+      const d = (r[2] || "").replace(/"/g,"").trim();
+      const s = (r[3] || "").replace(/"/g,"").trim();
+      return d === worshipDate && s === service;
+    });
+
+    if (dup) {
+      // 날짜 포맷: yyyy-mm-dd → yyyy. mm. dd
+      const [y,m,d] = worshipDate.split("-");
+      const fmtDate = `${y}. ${m}. ${d}`;
+      const msg = `이미 제출된 ${fmtDate}, ${service} 예배에 인원수가 존재합니다. 수정하시겠습니까?`;
+      showDupModal(msg, () => doSubmit(payload, sig, worshipDate, service, total));
+      return;
+    }
+  } catch(e) {
+    // 체크 실패 시 그냥 제출
+  }
+
+  doSubmit(payload, sig, worshipDate, service, total);
+}
+
+async function doSubmit(payload, sig, worshipDate, service, total) {
   const btn = document.getElementById("submitBtn");
   btn.disabled = true;
   btn.textContent = "제출 중...";
-
   try {
-    await fetch(SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-    showSuccess(reportDate, worshipDate, service, total, sig);
+    await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
+    showSuccess(payload.reportDate, worshipDate, service, total, sig);
   } catch(e) {
     showToast("제출 실패. 다시 시도해주세요.", "err");
   } finally {
