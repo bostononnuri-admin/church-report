@@ -621,7 +621,7 @@ async function submitForm() {
 
   // collect counts
   let total=0, onsite=0, online=0, student=0, teacher=0, other=0;
-  if (SERVICE_2.includes(svc)) {
+  if (SERVICE_2.includes(svc) || SERVICE_4.includes(svc)) {
     onsite  = parseInt(document.getElementById("cnt_onsite")?.value  || 0) || 0;
     online  = parseInt(document.getElementById("cnt_online")?.value  || 0) || 0;
     total   = onsite + online;
@@ -639,20 +639,21 @@ async function submitForm() {
     total, onsite, online, student, teacher, other, signature: sig
   };
 
-  // ── 중복 제출 체크 ──
+  // ── 중복 제출 체크 (3초 타임아웃) ──
   try {
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=출석보고`;
-    const res  = await fetch(url);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3000);
+    const res  = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
     const text = await res.text();
-    const rows = parseCSV(text).slice(1); // 헤더 제외
+    const rows = parseCSV(text).slice(1);
     const dup  = rows.find(r => {
       const d = (r[2] || "").replace(/"/g,"").trim();
       const s = (r[3] || "").replace(/"/g,"").trim();
       return d === worshipDate && s === service;
     });
-
     if (dup) {
-      // 날짜 포맷: yyyy-mm-dd → yyyy. mm. dd
       const [y,m,d] = worshipDate.split("-");
       const fmtDate = `${y}. ${m}. ${d}`;
       const msg = `이미 제출된 ${fmtDate}, ${service} 예배에 인원수가 존재합니다. 수정하시겠습니까?`;
@@ -660,7 +661,7 @@ async function submitForm() {
       return;
     }
   } catch(e) {
-    // 체크 실패 시 그냥 제출
+    // 타임아웃 또는 오류 시 중복 체크 건너뛰고 바로 제출
   }
 
   doSubmit(payload, sig, worshipDate, service, total);
@@ -671,7 +672,11 @@ async function doSubmit(payload, sig, worshipDate, service, total) {
   btn.disabled = true;
   btn.textContent = "제출 중...";
   try {
-    await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      body: JSON.stringify(payload)
+    });
     showSuccess(payload.reportDate, worshipDate, service, total, sig);
   } catch(e) {
     showToast("제출 실패. 다시 시도해주세요.", "err");
