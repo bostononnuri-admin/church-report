@@ -906,8 +906,8 @@ function showToast(msg, type="") {
 
 // ── 보고서 작성 ──
 async function generateReport() {
-  const start = document.getElementById("rptStart").value;
-  const end   = document.getElementById("rptEnd").value;
+  const start  = document.getElementById("rptStart").value;
+  const end    = document.getElementById("rptEnd").value;
   const status = document.getElementById("rptStatus");
   const btn    = document.getElementById("rptBtn");
 
@@ -917,12 +917,33 @@ async function generateReport() {
 
   btn.disabled = true;
   btn.textContent = "작성 중...";
-  status.innerHTML = `<div class="rpt-status">구글 문서 생성 중입니다. 잠시만 기다려주세요...</div>`;
+  status.innerHTML = `<div class="rpt-status">구글 문서 생성 중입니다. 잠시만 기다려주세요... (최대 30초)</div>`;
+
+  const url = `${SCRIPT_URL}?action=report&pw=${encodeURIComponent(ADMIN_PW)}&startDate=${start}&endDate=${end}`;
 
   try {
-    const url = `${SCRIPT_URL}?action=report&pw=${encodeURIComponent(ADMIN_PW)}&startDate=${start}&endDate=${end}`;
-    const res  = await fetch(url);
-    const json = await res.json();
+    const res = await fetch(url, {
+      method: "GET",
+      redirect: "follow"
+    });
+
+    const text = await res.text();
+
+    // JSON 파싱 시도
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch(pe) {
+      // 텍스트에 docUrl이 직접 들어있는 경우 파싱
+      const urlMatch = text.match(/https:\/\/docs\.google\.com\/document\/[^\s"<>]+/);
+      if (urlMatch) {
+        status.innerHTML = `<a class="rpt-link" href="${urlMatch[0]}" target="_blank">📄 보고서 열기 →</a>`;
+        btn.disabled = false;
+        btn.textContent = "작성";
+        return;
+      }
+      throw new Error("응답 파싱 실패: " + text.slice(0, 100));
+    }
 
     if (json.success && json.docUrl) {
       status.innerHTML = `<a class="rpt-link" href="${json.docUrl}" target="_blank">📄 보고서 열기 →</a>`;
@@ -930,7 +951,7 @@ async function generateReport() {
       status.innerHTML = `<div class="rpt-status" style="color:var(--red);">생성 실패: ${json.message || "다시 시도해주세요"}</div>`;
     }
   } catch(e) {
-    status.innerHTML = `<div class="rpt-status" style="color:var(--red);">오류가 발생했습니다. 다시 시도해주세요.</div>`;
+    status.innerHTML = `<div class="rpt-status" style="color:var(--red);">오류: ${e.message}</div>`;
   } finally {
     btn.disabled = false;
     btn.textContent = "작성";
