@@ -909,53 +909,16 @@ async function generateReport() {
   const start  = document.getElementById("rptStart").value;
   const end    = document.getElementById("rptEnd").value;
   const status = document.getElementById("rptStatus");
-  const btn    = document.getElementById("rptBtn");
 
   if (!start) return showToast("시작 날짜를 선택해주세요", "err");
   if (!end)   return showToast("종료 날짜를 선택해주세요", "err");
   if (start > end) return showToast("날짜 범위를 확인해주세요", "err");
 
-  btn.disabled = true;
-  btn.textContent = "작성 중...";
-  status.innerHTML = `<div class="rpt-status">구글 문서 생성 중입니다. 잠시만 기다려주세요... (최대 30초)</div>`;
-
-  const url = `${SCRIPT_URL}?action=report&pw=${encodeURIComponent(ADMIN_PW)}&startDate=${start}&endDate=${end}`;
-
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      redirect: "follow"
-    });
-
-    const text = await res.text();
-
-    // JSON 파싱 시도
-    let json;
-    try {
-      json = JSON.parse(text);
-    } catch(pe) {
-      // 텍스트에 docUrl이 직접 들어있는 경우 파싱
-      const urlMatch = text.match(/https:\/\/docs\.google\.com\/document\/[^\s"<>]+/);
-      if (urlMatch) {
-        status.innerHTML = `<a class="rpt-link" href="${urlMatch[0]}" target="_blank">📄 보고서 열기 →</a>`;
-        btn.disabled = false;
-        btn.textContent = "작성";
-        return;
-      }
-      throw new Error("응답 파싱 실패: " + text.slice(0, 100));
-    }
-
-    if (json.success && json.docUrl) {
-      status.innerHTML = `<a class="rpt-link" href="${json.docUrl}" target="_blank">📄 보고서 열기 →</a>`;
-    } else {
-      status.innerHTML = `<div class="rpt-status" style="color:var(--red);">생성 실패: ${json.message || "다시 시도해주세요"}</div>`;
-    }
-  } catch(e) {
-    status.innerHTML = `<div class="rpt-status" style="color:var(--red);">오류: ${e.message}</div>`;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "작성";
-  }
+  // fetch로 호출하면 Apps Script 리다이렉트 중 파라미터가 손실됨
+  // 새 탭으로 직접 열면 Apps Script가 문서 생성 후 자동 리다이렉트
+  const url = SCRIPT_URL + "?action=report&pw=" + encodeURIComponent(ADMIN_PW) + "&startDate=" + start + "&endDate=" + end;
+  window.open(url, "_blank");
+  status.innerHTML = '<div class="rpt-status">새 탭에서 보고서가 생성됩니다. 잠시 기다려주세요...</div>';
 }
 
 // ── 달력 전역 상태 ──
