@@ -332,6 +332,23 @@
     border: none; padding: 6px 12px;
     border-radius: 6px; cursor: pointer;
   }
+  .btn-secret {
+    /* 주변색과 동일 - 네이비 배경에 네이비 버튼 */
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 5px; cursor: pointer;
+    flex-shrink: 0;
+  }
+  .btn-secret.active {
+    background: rgba(255,200,0,0.25);
+    border-color: rgba(255,200,0,0.4);
+  }
+  /* 수정 버튼: 기본 숨김 */
+  .btn-edit { display: none; }
+  /* 수정모드 활성화 시 보임 */
+  body.edit-mode .btn-edit { display: inline-block; }
+
   /* REPORT BOX */
   .rpt-box {
     background: var(--white); border: 1.5px solid var(--border);
@@ -592,6 +609,24 @@
 <!-- ───── TOAST ───── -->
 <div class="toast" id="toast"></div>
 
+<!-- ───── 수정모드 확인 모달 ───── -->
+<div class="overlay" id="editModeOverlay">
+  <div class="sheet" style="position:relative;">
+    <button onclick="document.getElementById('editModeOverlay').classList.remove('open')"
+      style="position:absolute;top:14px;right:16px;background:none;border:none;
+             font-size:20px;color:var(--ink-s);cursor:pointer;line-height:1;">✕</button>
+    <div class="handle"></div>
+    <h3>✏️ 수정 모드</h3>
+    <p style="font-size:13px;color:var(--ink-s);margin-bottom:14px;line-height:1.6;">
+      수정 모드를 시작하려면 비밀번호를 입력하세요.
+    </p>
+    <input class="modal-inp" id="editModePwInput" type="password"
+      placeholder="비밀번호 입력"
+      onkeydown="if(event.key==='Enter')checkEditModePw()">
+    <button class="btn-conf" id="editModeConfirmBtn" onclick="checkEditModePw()">확인</button>
+  </div>
+</div>
+
 <!-- ───── 중복 제출 확인 모달 ───── -->
 <div class="overlay" id="dupOverlay">
   <div class="sheet">
@@ -624,7 +659,10 @@
 <div id="adminView" style="display:none;">
   <div class="adm-hdr">
     <h2>📋 관리자 뷰</h2>
-    <button class="btn-out" onclick="logoutAdmin()">로그아웃</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-secret" id="secretEditBtn" onclick="promptEditMode()" title=""></button>
+      <button class="btn-out" onclick="logoutAdmin()">로그아웃</button>
+    </div>
   </div>
 
   <div class="adm-body">
@@ -902,6 +940,41 @@ function showToast(msg, type="") {
   t.className = "toast show " + type;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.className = "toast", 2800);
+}
+
+// ── 수정모드 ──
+// 코드에는 SHA-256 해시만 저장 (원본 비밀번호 비공개)
+const EDIT_PW_HASH = "6f9288184c62c08b3f99e92488ec70c3e0c7343522d083aeb113ff0e8e900b3f";
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+function promptEditMode() {
+  const isActive = document.body.classList.contains("edit-mode");
+  if (isActive) {
+    document.body.classList.remove("edit-mode");
+    document.getElementById("secretEditBtn").classList.remove("active");
+    return;
+  }
+  document.getElementById("editModePwInput").value = "";
+  document.getElementById("editModeOverlay").classList.add("open");
+  setTimeout(() => document.getElementById("editModePwInput").focus(), 100);
+}
+
+async function checkEditModePw() {
+  const input = document.getElementById("editModePwInput").value;
+  const hash  = await sha256(input);
+  if (hash === EDIT_PW_HASH) {
+    document.getElementById("editModeOverlay").classList.remove("open");
+    document.getElementById("editModePwInput").value = "";
+    document.body.classList.add("edit-mode");
+    document.getElementById("secretEditBtn").classList.add("active");
+  } else {
+    showToast("비밀번호가 틀렸습니다", "err");
+    document.getElementById("editModePwInput").value = "";
+  }
 }
 
 // ── 보고서 작성 ──
@@ -1261,6 +1334,7 @@ function checkPw() {
 function logoutAdmin() {
   document.getElementById("adminView").style.display = "none";
   document.getElementById("formView").style.display  = "block";
+  document.body.classList.remove("edit-mode");
 }
 
 async function loadAdminData() {
