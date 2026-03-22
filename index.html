@@ -664,7 +664,7 @@
   <div class="adm-hdr">
     <h2>📋 관리자 뷰</h2>
     <div style="display:flex;gap:8px;align-items:center;">
-      <button class="btn-secret" id="secretEditBtn" onclick="promptEditMode()"></button>
+      <button class="btn-secret" id="secretEditBtn" onclick="handleSecretClick()"></button>
       <button class="btn-out" onclick="logoutAdmin()">로그아웃</button>
       <button class="btn-secret" tabindex="-1"></button>
     </div>
@@ -970,6 +970,18 @@ const EDIT_PW_HASH = "6f9288184c62c08b3f99e92488ec70c3e0c7343522d083aeb113ff0e8e
 async function sha256(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+// 더블클릭 커스텀 구현 (0.40초 이하)
+let _secretClickTime = 0;
+function handleSecretClick() {
+  const now = Date.now();
+  if (now - _secretClickTime <= 400) {
+    _secretClickTime = 0;
+    promptEditMode();
+  } else {
+    _secretClickTime = now;
+  }
 }
 
 function promptEditMode() {
