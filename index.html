@@ -333,21 +333,25 @@
     border-radius: 6px; cursor: pointer;
   }
   .btn-secret {
-    /* 주변색과 동일 - 네이비 배경에 네이비 버튼 */
-    width: 28px; height: 28px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 5px; cursor: pointer;
+    width: 14px; height: 28px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 3px;
+    cursor: default;
     flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
   }
   .btn-secret.active {
-    background: rgba(255,200,0,0.25);
-    border-color: rgba(255,200,0,0.4);
+    background: rgba(255,200,0,0.15);
+    border-color: rgba(255,200,0,0.2);
   }
   /* 수정 버튼: 기본 숨김 */
   .btn-edit { display: none; }
+  /* 삭제 버튼: 기본 숨김 */
+  .btn-del-sm { display: none; }
   /* 수정모드 활성화 시 보임 */
   body.edit-mode .btn-edit { display: inline-block; }
+  body.edit-mode .btn-del-sm { display: inline-block; }
 
   /* REPORT BOX */
   .rpt-box {
@@ -660,8 +664,9 @@
   <div class="adm-hdr">
     <h2>📋 관리자 뷰</h2>
     <div style="display:flex;gap:8px;align-items:center;">
-      <button class="btn-secret" id="secretEditBtn" onclick="promptEditMode()" title=""></button>
+      <button class="btn-secret" id="secretEditBtn" onclick="promptEditMode()"></button>
       <button class="btn-out" onclick="logoutAdmin()">로그아웃</button>
+      <button class="btn-secret" tabindex="-1"></button>
     </div>
   </div>
 
@@ -704,6 +709,14 @@
     <div class="handle"></div>
     <h3 id="editTitle">✏️ 인원수 수정</h3>
     <div id="editFields"></div>
+    <div style="margin-top:14px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">수정 사유</label>
+      <textarea id="editReason" rows="2"
+        style="width:100%;padding:10px 12px;font-size:14px;font-family:'Pretendard',sans-serif;
+               border:1.5px solid var(--border);border-radius:10px;outline:none;
+               background:var(--pale);resize:none;box-sizing:border-box;color:var(--ink);"
+        placeholder="수정 사유를 입력해주세요"></textarea>
+    </div>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn-conf" id="editCancelBtn"
         style="background:var(--pale);color:var(--navy);border:1.5px solid var(--border);">취소</button>
@@ -717,14 +730,22 @@
   <div class="sheet">
     <div class="handle"></div>
     <h3>🗑️ 삭제 확인</h3>
-    <p id="delMsg" style="font-size:14px;color:#1A2440;line-height:1.7;margin-bottom:20px;"></p>
+    <p id="delMsg" style="font-size:14px;color:#1A2440;line-height:1.7;margin-bottom:14px;"></p>
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">삭제 사유</label>
+      <textarea id="delReason" rows="2"
+        style="width:100%;padding:10px 12px;font-size:14px;font-family:'Pretendard',sans-serif;
+               border:1.5px solid var(--border);border-radius:10px;outline:none;
+               background:var(--pale);resize:none;box-sizing:border-box;color:var(--ink);"
+        placeholder="삭제 사유를 입력해주세요"></textarea>
+    </div>
     <div style="display:flex;gap:10px;">
       <button class="btn-conf" id="delCancelBtn"
         style="background:var(--pale);color:var(--navy);border:1.5px solid var(--border);">취소</button>
       <button class="btn-conf" id="delConfirmBtn"
         style="background:var(--red);">삭제</button>
     </div>
-  </div>
+  </div>v>
 </div>
 
 <script>
@@ -1228,7 +1249,8 @@ function editCalcTotal() {
 }
 
 function doEditSubmit(d) {
-  const svc = d.svc;
+  const svc    = d.svc;
+  const reason = document.getElementById("editReason").value.trim();
   let total=0, onsite=0, online=0, student=0, teacher=0, other=0;
   if (SVC2.includes(svc)||SVC4.includes(svc)) {
     onsite  = parseInt(document.getElementById("ei_onsite")?.value||0)||0;
@@ -1252,7 +1274,9 @@ function doEditSubmit(d) {
     worshipDate: d.dk,
     service:     svc,
     total, onsite, online, student, teacher, other,
-    signature:   d.sig
+    signature:   d.sig,
+    reason:      reason,
+    editType:    "수정"
   });
   const img = new Image();
   img.onload = img.onerror = function() {
@@ -1272,10 +1296,12 @@ function openDelModal(encoded) {
   const dt  = new Date(d.dk);
   const msg = `${dt.getMonth()+1}월 ${dt.getDate()}일 ${DAYS_KO[dt.getDay()]}요일 ${d.svc} 를 삭제하시겠습니까?`;
   document.getElementById("delMsg").textContent = msg;
+  document.getElementById("delReason").value = "";
   document.getElementById("delOverlay").classList.add("open");
   document.getElementById("delConfirmBtn").onclick = function() {
+    const reason = document.getElementById("delReason").value.trim();
     document.getElementById("delOverlay").classList.remove("open");
-    doDeleteRow(d.sheetRow);
+    doDeleteRow(d.sheetRow, d, reason);
   };
   document.getElementById("delCancelBtn").onclick = function() {
     document.getElementById("delOverlay").classList.remove("open");
@@ -1283,18 +1309,32 @@ function openDelModal(encoded) {
 }
 
 let _busy = false;
-function doDeleteRow(sheetRow) {
+function doDeleteRow(sheetRow, rowData, reason) {
   if (_busy) return;
   _busy = true;
   showToast("삭제 중...", "");
-  const url = `${SCRIPT_URL}?action=delete&pw=${encodeURIComponent(ADMIN_PW)}&rowIndex=${sheetRow}`;
+  const params = new URLSearchParams({
+    action:   "delete",
+    pw:       ADMIN_PW,
+    rowIndex: sheetRow,
+    reason:   reason || "",
+    dk:       rowData ? rowData.dk  : "",
+    svc:      rowData ? rowData.svc : "",
+    total:    rowData ? rowData.total   : 0,
+    onsite:   rowData ? rowData.onsite  : 0,
+    online:   rowData ? rowData.online  : 0,
+    student:  rowData ? rowData.student : 0,
+    teacher:  rowData ? rowData.teacher : 0,
+    other:    rowData ? rowData.other   : 0,
+    sig:      rowData ? rowData.sig     : ""
+  });
   const img = new Image();
   img.onload = img.onerror = function() {
     _busy = false;
     showToast("삭제 완료!", "ok");
     setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
   };
-  img.src = url;
+  img.src = SCRIPT_URL + "?" + params.toString();l;
   setTimeout(function() {
     if (_busy) {
       _busy = false;
