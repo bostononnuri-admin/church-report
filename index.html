@@ -404,6 +404,51 @@
     color: var(--navy); text-align: center; text-decoration: none;
   }
 
+  /* MONTHLY REPORT BOX */
+  .mr-box {
+    background: var(--white); border: 1.5px solid #2E7D32;
+    border-radius: 14px; padding: 16px; margin-bottom: 16px;
+    box-shadow: 0 1px 5px rgba(46,125,50,.1);
+  }
+  .mr-title {
+    font-size: 13px; font-weight: 700; color: #2E7D32;
+    margin-bottom: 12px; letter-spacing: .3px;
+  }
+  .mr-row {
+    display: flex; align-items: flex-end; gap: 8px;
+  }
+  .mr-field { flex: 1; }
+  .mr-label {
+    display: block; font-size: 10px; font-weight: 700;
+    color: var(--ink-s); margin-bottom: 4px; letter-spacing: .5px;
+  }
+  .mr-inp {
+    width: 100%; padding: 9px 10px; font-size: 14px;
+    font-family: "Pretendard", sans-serif;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    outline: none; background: var(--pale); color: var(--ink);
+    box-sizing: border-box; text-align: center;
+  }
+  .mr-inp:focus { border-color: #2E7D32; background: var(--white); }
+  .mr-sep {
+    font-size: 13px; color: var(--ink-s);
+    padding-bottom: 10px; flex-shrink: 0;
+  }
+  .mr-btn {
+    padding: 10px 14px; font-size: 13px;
+    font-family: "Pretendard", sans-serif; font-weight: 700;
+    color: #fff; background: #2E7D32;
+    border: none; border-radius: 8px; cursor: pointer;
+    white-space: nowrap; flex-shrink: 0;
+    transition: background .15s;
+  }
+  .mr-btn:active  { background: #1B5E20; }
+  .mr-btn:disabled { background: #81C784; cursor: not-allowed; }
+  .mr-status {
+    margin-top: 10px; font-size: 12px; color: var(--ink-s);
+    text-align: center; line-height: 1.6;
+  }
+
   /* CALENDAR */
   .cal-nav {
     display: flex; align-items: center; justify-content: space-between;
@@ -688,6 +733,25 @@
         <button class="rpt-btn" id="rptBtn" onclick="generateReport()">작성</button>
       </div>
       <div id="rptStatus"></div>
+    </div>
+
+    <!-- 월간보고 생성 (NEW) -->
+    <div class="mr-box">
+      <div class="mr-title">📊 월간보고 생성 (xlsx)</div>
+      <div class="mr-row">
+        <div class="mr-field">
+          <label class="mr-label">연도</label>
+          <input type="number" id="mrYear" class="mr-inp" min="2020" max="2099" placeholder="2026">
+        </div>
+        <div class="mr-sep">년</div>
+        <div class="mr-field" style="max-width:72px;">
+          <label class="mr-label">월</label>
+          <input type="number" id="mrMonth" class="mr-inp" min="1" max="12" placeholder="1">
+        </div>
+        <div class="mr-sep">월</div>
+        <button class="mr-btn" id="mrBtn" onclick="generateMonthlyReport()">생성</button>
+      </div>
+      <div id="mrStatus" class="mr-status"></div>
     </div>
 
     <!-- 달력 헤더 -->
@@ -1025,6 +1089,30 @@ async function generateReport() {
   const url = SCRIPT_URL + "?action=report&pw=" + encodeURIComponent(ADMIN_PW) + "&startDate=" + start + "&endDate=" + end;
   window.open(url, "_blank");
   status.innerHTML = '<div class="rpt-status">새 탭에서 보고서가 생성됩니다. 잠시 기다려주세요...</div>';
+}
+
+// ── 월간보고 생성 ──
+function generateMonthlyReport() {
+  const year  = document.getElementById("mrYear").value.trim();
+  const month = document.getElementById("mrMonth").value.trim();
+  const status = document.getElementById("mrStatus");
+
+  if (!year || !month)  return showToast("연도와 월을 입력해주세요", "err");
+  const y = parseInt(year), m = parseInt(month);
+  if (isNaN(y) || isNaN(m) || m < 1 || m > 12)
+    return showToast("올바른 연도/월을 입력해주세요", "err");
+
+  const mm = String(m).padStart(2, "0");
+  const url = SCRIPT_URL
+    + "?action=monthlyReport"
+    + "&pw="    + encodeURIComponent(ADMIN_PW)
+    + "&year="  + y
+    + "&month=" + mm;
+
+  window.open(url, "_blank");
+  status.innerHTML =
+    `<span style="color:#2E7D32;">⏳ ${y}년 ${m}월 보고서 생성 중입니다...</span><br>` +
+    `<span style="color:#888;font-size:11px;">새 탭에서 생성됩니다. Offerings_${y}${mm}.xlsx 파일이 구글드라이브에 있어야 합니다.</span>`;
 }
 
 // ── 달력 전역 상태 ──
@@ -1379,6 +1467,12 @@ function checkPw() {
     const twoWeeksAgo = new Date(bosNow); twoWeeksAgo.setDate(bosNow.getDate() - 13);
     document.getElementById("rptStart").value = fmt(twoWeeksAgo);
     document.getElementById("rptEnd").value   = fmt(bosNow);
+
+    // 월간보고 기본값: 이전 달 (당월 보고서는 다음 달 초에 작성하는 경우 대비)
+    const prevMonth = new Date(bosNow.getFullYear(), bosNow.getMonth(), 1);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    document.getElementById("mrYear").value  = prevMonth.getFullYear();
+    document.getElementById("mrMonth").value = prevMonth.getMonth() + 1;
   } else {
     showToast("비밀번호가 틀렸습니다", "err");
   }
