@@ -1311,7 +1311,7 @@ function openEditModal(encoded) {
   const d = JSON.parse(decodeURIComponent(encoded));
   const svc = d.svc;
 
-  document.getElementById("editTitle").textContent = "✏️ " + svc + " 인원수 수정";
+  document.getElementById("editTitle").textContent = "✏️ " + svc + " 수정";
 
   const inp = (id, label, val) => `
     <div class="edit-item">
@@ -1340,8 +1340,15 @@ function openEditModal(encoded) {
         style="background:var(--navy);color:#fff;border-color:var(--navy);">
     </div>` : "";
 
-  document.getElementById("editFields").innerHTML =
-    `<div class="edit-row ${cols}">${fields}${totalRow}</div>`;
+  document.getElementById("editFields").innerHTML = `
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">예배 날짜</label>
+      <input type="date" id="ei_date" value="${d.dk}"
+        style="width:100%;padding:11px 12px;font-size:15px;font-family:'Pretendard',sans-serif;
+               border:1.5px solid var(--border);border-radius:10px;outline:none;
+               background:var(--pale);color:var(--ink);box-sizing:border-box;">
+    </div>
+    <div class="edit-row ${cols}">${fields}${totalRow}</div>`;
 
   editCalcTotal();
 
@@ -1366,8 +1373,9 @@ function editCalcTotal() {
 }
 
 function doEditSubmit(d) {
-  const svc    = d.svc;
-  const reason = document.getElementById("editReason").value.trim();
+  const svc        = d.svc;
+  const reason     = document.getElementById("editReason").value.trim();
+  const newDate    = document.getElementById("ei_date")?.value || d.dk;
   let total=0, onsite=0, online=0, student=0, teacher=0, other=0;
   if (SVC2.includes(svc)||SVC4.includes(svc)) {
     onsite  = parseInt(document.getElementById("ei_onsite")?.value||0)||0;
@@ -1386,9 +1394,9 @@ function doEditSubmit(d) {
   showToast("수정 중...", "");
 
   const params = new URLSearchParams({
-    action: "submit",
-    reportDate:  d.dk,
-    worshipDate: d.dk,
+    action:      "submit",
+    reportDate:  newDate,
+    worshipDate: newDate,
     service:     svc,
     total, onsite, online, student, teacher, other,
     signature:   d.sig,
