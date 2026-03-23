@@ -352,6 +352,11 @@
   /* 수정모드 활성화 시 보임 */
   body.edit-mode .btn-edit { display: inline-block; }
   body.edit-mode .btn-del-sm { display: inline-block; }
+  /* 보고서 섹션: 수정모드에서만 보임 */
+  .rpt-box { display: none; }
+  .mr-box  { display: none; }
+  body.edit-mode .rpt-box { display: block; }
+  body.edit-mode .mr-box  { display: block; }
 
   /* REPORT BOX */
   .rpt-box {
@@ -717,9 +722,9 @@
 
   <div class="adm-body">
 
-    <!-- 보고서 작성 -->
+    <!-- 운영위원회 보고서 작성 -->
     <div class="rpt-box">
-      <div class="rpt-title">📄 보고서 작성</div>
+      <div class="rpt-title">📄 운영위원회 보고서 작성</div>
       <div class="rpt-row">
         <div class="rpt-field">
           <label class="rpt-label">시작</label>
@@ -735,9 +740,13 @@
       <div id="rptStatus"></div>
     </div>
 
-    <!-- 월간보고 생성 (NEW) -->
+    <!-- OMA 월간보고서 생성 -->
     <div class="mr-box">
-      <div class="mr-title">📊 월간보고 생성 (xlsx)</div>
+      <div class="mr-title">📊 OMA 월간보고서 생성</div>
+      <div style="margin-bottom:10px;">
+        <label class="mr-label">작성자</label>
+        <input type="text" id="mrAuthor" class="mr-inp" placeholder="이름 입력" style="text-align:left;padding-left:12px;">
+      </div>
       <div class="mr-row">
         <div class="mr-field">
           <label class="mr-label">연도</label>
@@ -1093,8 +1102,9 @@ async function generateReport() {
 
 // ── 월간보고 생성 ──
 function generateMonthlyReport() {
-  const year  = document.getElementById("mrYear").value.trim();
-  const month = document.getElementById("mrMonth").value.trim();
+  const year   = document.getElementById("mrYear").value.trim();
+  const month  = document.getElementById("mrMonth").value.trim();
+  const author = document.getElementById("mrAuthor").value.trim();
   const status = document.getElementById("mrStatus");
 
   if (!year || !month)  return showToast("연도와 월을 입력해주세요", "err");
@@ -1105,9 +1115,10 @@ function generateMonthlyReport() {
   const mm = String(m).padStart(2, "0");
   const url = SCRIPT_URL
     + "?action=monthlyReport"
-    + "&pw="    + encodeURIComponent(ADMIN_PW)
-    + "&year="  + y
-    + "&month=" + mm;
+    + "&pw="     + encodeURIComponent(ADMIN_PW)
+    + "&year="   + y
+    + "&month="  + mm
+    + "&author=" + encodeURIComponent(author);
 
   window.open(url, "_blank");
   status.innerHTML =
