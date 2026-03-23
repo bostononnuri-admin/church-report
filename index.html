@@ -342,8 +342,8 @@
     -webkit-tap-highlight-color: transparent;
   }
   .btn-secret.active {
-    background: rgba(255,200,0,0.15);
-    border-color: rgba(255,200,0,0.2);
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.04);
   }
   /* 수정 버튼: 기본 숨김 */
   .btn-edit { display: none; }
@@ -1045,15 +1045,21 @@ async function sha256(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
 }
 
-// 더블클릭 커스텀 구현 (0.40초 이하)
+// 트리플클릭 구현 (800ms 이내 3번)
 let _secretClickTime = 0;
+let _secretClickCount = 0;
 function handleSecretClick() {
   const now = Date.now();
-  if (now - _secretClickTime <= 400) {
-    _secretClickTime = 0;
-    promptEditMode();
+  if (now - _secretClickTime > 800) {
+    _secretClickCount = 1;
   } else {
-    _secretClickTime = now;
+    _secretClickCount++;
+  }
+  _secretClickTime = now;
+  if (_secretClickCount >= 3) {
+    _secretClickCount = 0;
+    _secretClickTime  = 0;
+    promptEditMode();
   }
 }
 
