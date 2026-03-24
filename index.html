@@ -875,7 +875,7 @@ function updateCountFields() {
     wrap.className = "cnt-grid g3-total";
     wrap.innerHTML = `
       <div class="cnt-item"><label>학생</label><input class="cnt-inp sub-inp" id="cnt_student" ${inp} oninput="sanitizeNatural(this);calcTotal()"></div>
-      <div class="cnt-item"><label>교사</label><input class="cnt-inp sub-inp" id="cnt_teacher" ${inp} oninput="sanitizeNatural(this);calcTotal()"></div>
+      <div class="cnt-item"><label>교역자+교사</label><input class="cnt-inp sub-inp" id="cnt_teacher" ${inp} oninput="sanitizeNatural(this);calcTotal()"></div>
       <div class="cnt-item"><label>그외</label><input class="cnt-inp sub-inp" id="cnt_other"   ${inp} oninput="sanitizeNatural(this);calcTotal()"></div>
       <div class="cnt-item cnt-total-row"><label>합계</label><input class="cnt-inp cnt-total-disp" id="cnt_total" type="text" readonly placeholder="0"></div>`;
   } else {
@@ -1270,7 +1270,7 @@ function renderDateSummary(dk) {
 
     let detail = "";
     if (SVC2.includes(svc)||SVC4.includes(svc)) detail = `현장 ${onsite}  온라인 ${online}`;
-    else if (SVC3.includes(svc)) detail = `학생 ${student}  교사 ${teacher}  그외 ${other}`;
+    else if (SVC3.includes(svc)) detail = `학생 ${student}  교역자+교사 ${teacher}  그외 ${other}`;
 
     // 수정/삭제 버튼에 필요한 데이터를 JSON으로 인코딩
     const rowData = encodeURIComponent(JSON.stringify({
@@ -1327,7 +1327,7 @@ function openEditModal(encoded) {
     fields = inp("onsite","현장",d.onsite) + inp("online","온라인",d.online);
   } else if (SVC3.includes(svc)) {
     cols = "g3";
-    fields = inp("student","학생",d.student) + inp("teacher","교사",d.teacher) + inp("other","그외",d.other);
+    fields = inp("student","학생",d.student) + inp("teacher","교역자+교사",d.teacher) + inp("other","그외",d.other);
   } else {
     fields = inp("total","총 인원",d.total);
   }
@@ -1543,7 +1543,7 @@ async function loadAdminData() {
         if (online)  badges += `<span class="badge">온라인 \${online}명</span>`;
       } else if (student || teacher || other) {
         if (student) badges += `<span class="badge">학생 \${student}명</span>`;
-        if (teacher) badges += `<span class="badge">교사 \${teacher}명</span>`;
+        if (teacher) badges += `<span class="badge">교역자+교사 \${teacher}명</span>`;
         if (other)   badges += `<span class="badge">그외 \${other}명</span>`;
       } else {
         badges += `<span class="badge">총 \${total}명</span>`;
