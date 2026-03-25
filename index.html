@@ -349,9 +349,9 @@
   .btn-edit { display: none; }
   /* 삭제 버튼: 기본 숨김 */
   .btn-del-sm { display: none; }
-  /* 수정모드 활성화 시 보임 */
-  body.edit-mode .btn-edit { display: inline-block; }
-  body.edit-mode .btn-del-sm { display: inline-block; }
+  /* 관리자 모드 활성화 시 보임 */
+  body.admin-mode .btn-edit { display: inline-block; }
+  body.admin-mode .btn-del-sm { display: inline-block; }
   /* 보고서 섹션: 수정모드에서만 보임 */
   .rpt-box { display: none; }
   .mr-box  { display: none; }
@@ -686,7 +686,23 @@
   <div class="sheet">
     <div class="handle"></div>
     <h3>⚠️ 중복 제출 확인</h3>
-    <p id="dupMsg" style="font-size:14px;color:#1A2440;line-height:1.7;margin-bottom:20px;"></p>
+    <p id="dupMsg" style="font-size:14px;color:#1A2440;line-height:1.7;margin-bottom:14px;"></p>
+    <div style="margin-bottom:10px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">덮어쓰는 사람 <span style="color:var(--red);">*</span></label>
+      <input id="dupName" type="text"
+        style="width:100%;padding:10px 12px;font-size:14px;font-family:'Pretendard',sans-serif;
+               border:1.5px solid var(--border);border-radius:10px;outline:none;
+               background:var(--pale);box-sizing:border-box;color:var(--ink);"
+        placeholder="이름을 입력해주세요">
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">덮어쓰기 사유 <span style="color:var(--red);">*</span></label>
+      <textarea id="dupReason" rows="2"
+        style="width:100%;padding:10px 12px;font-size:14px;font-family:'Pretendard',sans-serif;
+               border:1.5px solid var(--border);border-radius:10px;outline:none;
+               background:var(--pale);resize:none;box-sizing:border-box;color:var(--ink);"
+        placeholder="덮어쓰기 사유를 입력해주세요"></textarea>
+    </div>
     <div style="display:flex;gap:10px;">
       <button class="btn-conf" id="dupCancelBtn"
         style="background:var(--pale);color:var(--navy);border:1.5px solid var(--border);">취소</button>
@@ -783,7 +799,15 @@
     <h3 id="editTitle">✏️ 인원수 수정</h3>
     <div id="editFields"></div>
     <div style="margin-top:14px;">
-      <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">수정 사유</label>
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">수정한 사람 <span style="color:var(--red);">*</span></label>
+      <input id="editName" type="text"
+        style="width:100%;padding:10px 12px;font-size:14px;font-family:'Pretendard',sans-serif;
+               border:1.5px solid var(--border);border-radius:10px;outline:none;
+               background:var(--pale);box-sizing:border-box;color:var(--ink);margin-bottom:10px;"
+        placeholder="이름을 입력해주세요">
+    </div>
+    <div>
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">수정 사유 <span style="color:var(--red);">*</span></label>
       <textarea id="editReason" rows="2"
         style="width:100%;padding:10px 12px;font-size:14px;font-family:'Pretendard',sans-serif;
                border:1.5px solid var(--border);border-radius:10px;outline:none;
@@ -804,8 +828,16 @@
     <div class="handle"></div>
     <h3>🗑️ 삭제 확인</h3>
     <p id="delMsg" style="font-size:14px;color:#1A2440;line-height:1.7;margin-bottom:14px;"></p>
+    <div style="margin-bottom:10px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">삭제한 사람 <span style="color:var(--red);">*</span></label>
+      <input id="delName" type="text"
+        style="width:100%;padding:10px 12px;font-size:14px;font-family:'Pretendard',sans-serif;
+               border:1.5px solid var(--border);border-radius:10px;outline:none;
+               background:var(--pale);box-sizing:border-box;color:var(--ink);"
+        placeholder="이름을 입력해주세요">
+    </div>
     <div style="margin-bottom:16px;">
-      <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">삭제 사유</label>
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">삭제 사유 <span style="color:var(--red);">*</span></label>
       <textarea id="delReason" rows="2"
         style="width:100%;padding:10px 12px;font-size:14px;font-family:'Pretendard',sans-serif;
                border:1.5px solid var(--border);border-radius:10px;outline:none;
@@ -818,7 +850,7 @@
       <button class="btn-conf" id="delConfirmBtn"
         style="background:var(--red);">삭제</button>
     </div>
-  </div>v>
+  </div>
 </div>
 
 <script>
@@ -901,10 +933,16 @@ function calcTotal() {
 // ── 중복 확인 모달 ──
 function showDupModal(message, onConfirm) {
   document.getElementById("dupMsg").textContent = message;
+  document.getElementById("dupName").value = "";
+  document.getElementById("dupReason").value = "";
   document.getElementById("dupOverlay").classList.add("open");
   document.getElementById("dupConfirmBtn").onclick = function() {
+    const name   = document.getElementById("dupName").value.trim();
+    const reason = document.getElementById("dupReason").value.trim();
+    if (!name)   return showToast("덮어쓰는 사람 이름을 입력해주세요", "err");
+    if (!reason) return showToast("덮어쓰기 사유를 입력해주세요", "err");
     document.getElementById("dupOverlay").classList.remove("open");
-    onConfirm();
+    onConfirm(name, reason);
   };
   document.getElementById("dupCancelBtn").onclick = function() {
     document.getElementById("dupOverlay").classList.remove("open");
@@ -960,7 +998,7 @@ async function submitForm() {
       const [y,m,d] = worshipDate.split("-");
       const fmtDate = `${y}. ${m}. ${d}`;
       const msg = `이미 제출된 ${fmtDate}, ${service} 예배에 인원수가 존재합니다. 수정하시겠습니까?`;
-      showDupModal(msg, () => doSubmit(payload, sig, worshipDate, service, total));
+      showDupModal(msg, (dupName, dupReason) => doSubmit(payload, sig, worshipDate, service, total, dupName, dupReason));
       return;
     }
   } catch(e) {
@@ -970,12 +1008,11 @@ async function submitForm() {
   doSubmit(payload, sig, worshipDate, service, total);
 }
 
-function doSubmit(payload, sig, worshipDate, service, total) {
+function doSubmit(payload, sig, worshipDate, service, total, dupName, dupReason) {
   const btn = document.getElementById("submitBtn");
   btn.disabled = true;
   btn.textContent = "제출 중...";
 
-  // GET 방식으로 전송 (CORS 문제 없음)
   const params = new URLSearchParams({
     action:      payload.action,
     reportDate:  payload.reportDate  || "",
@@ -987,7 +1024,9 @@ function doSubmit(payload, sig, worshipDate, service, total) {
     student:     payload.student     || 0,
     teacher:     payload.teacher     || 0,
     other:       payload.other       || 0,
-    signature:   payload.signature   || ""
+    signature:   payload.signature   || "",
+    modifier:    dupName   || "",
+    reason:      dupReason || ""
   });
   const url = SCRIPT_URL + "?" + params.toString();
 
@@ -1373,9 +1412,12 @@ function editCalcTotal() {
 }
 
 function doEditSubmit(d) {
-  const svc        = d.svc;
-  const reason     = document.getElementById("editReason").value.trim();
-  const newDate    = document.getElementById("ei_date")?.value || d.dk;
+  const svc     = d.svc;
+  const name    = document.getElementById("editName").value.trim();
+  const reason  = document.getElementById("editReason").value.trim();
+  if (!name)   return showToast("수정한 사람 이름을 입력해주세요", "err");
+  if (!reason) return showToast("수정 사유를 입력해주세요", "err");
+  const newDate = document.getElementById("ei_date")?.value || d.dk;
   let total=0, onsite=0, online=0, student=0, teacher=0, other=0;
   if (SVC2.includes(svc)||SVC4.includes(svc)) {
     onsite  = parseInt(document.getElementById("ei_onsite")?.value||0)||0;
@@ -1400,6 +1442,7 @@ function doEditSubmit(d) {
     service:     svc,
     total, onsite, online, student, teacher, other,
     signature:   d.sig,
+    modifier:    name,
     reason:      reason,
     editType:    "수정"
   });
@@ -1421,12 +1464,16 @@ function openDelModal(encoded) {
   const dt  = new Date(d.dk);
   const msg = `${dt.getMonth()+1}월 ${dt.getDate()}일 ${DAYS_KO[dt.getDay()]}요일 ${d.svc} 를 삭제하시겠습니까?`;
   document.getElementById("delMsg").textContent = msg;
+  document.getElementById("delName").value   = "";
   document.getElementById("delReason").value = "";
   document.getElementById("delOverlay").classList.add("open");
   document.getElementById("delConfirmBtn").onclick = function() {
+    const name   = document.getElementById("delName").value.trim();
     const reason = document.getElementById("delReason").value.trim();
+    if (!name)   return showToast("삭제한 사람 이름을 입력해주세요", "err");
+    if (!reason) return showToast("삭제 사유를 입력해주세요", "err");
     document.getElementById("delOverlay").classList.remove("open");
-    doDeleteRow(d.sheetRow, d, reason);
+    doDeleteRow(d.sheetRow, d, reason, name);
   };
   document.getElementById("delCancelBtn").onclick = function() {
     document.getElementById("delOverlay").classList.remove("open");
@@ -1434,7 +1481,7 @@ function openDelModal(encoded) {
 }
 
 let _busy = false;
-function doDeleteRow(sheetRow, rowData, reason) {
+function doDeleteRow(sheetRow, rowData, reason, modifier) {
   if (_busy) return;
   _busy = true;
   showToast("삭제 중...", "");
@@ -1442,9 +1489,10 @@ function doDeleteRow(sheetRow, rowData, reason) {
     action:   "delete",
     pw:       ADMIN_PW,
     rowIndex: sheetRow,
-    reason:   reason || "",
-    dk:       rowData ? rowData.dk  : "",
-    svc:      rowData ? rowData.svc : "",
+    reason:   reason   || "",
+    modifier: modifier || "",
+    dk:       rowData ? rowData.dk      : "",
+    svc:      rowData ? rowData.svc     : "",
     total:    rowData ? rowData.total   : 0,
     onsite:   rowData ? rowData.onsite  : 0,
     online:   rowData ? rowData.online  : 0,
@@ -1481,6 +1529,7 @@ function checkPw() {
     document.getElementById("formView").style.display  = "none";
     document.getElementById("successView").style.display = "none";
     document.getElementById("adminView").style.display = "block";
+    document.body.classList.add("admin-mode");
 
     // 오늘 날짜(보스턴) 기준으로 달력 열기
     const bosNow = new Date(new Intl.DateTimeFormat("en-CA", {
@@ -1506,6 +1555,7 @@ function logoutAdmin() {
   document.getElementById("adminView").style.display = "none";
   document.getElementById("formView").style.display  = "block";
   document.body.classList.remove("edit-mode");
+  document.body.classList.remove("admin-mode");
 }
 
 async function loadAdminData() {
