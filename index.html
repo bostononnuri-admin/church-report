@@ -858,6 +858,15 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzztaNejz8nkgug16NWI
 const SHEET_ID   = "1VNkF5t-MJWc5abCvFXdA-JlT0YEf-Y00cN1kPkF3lLI";
 const ADMIN_PW   = "4Federalst!";
 
+// ── 날짜 문자열 파싱 (로컬 기준, UTC 오프셋 문제 방지) ──
+// "YYYY-MM-DD" → new Date()는 UTC 기준 파싱 → 보스턴(UTC-5)에서 전날로 밀림
+// parseDateStr()은 로컬 자정으로 파싱하여 요일/날짜 오류 방지
+function parseDateStr(str) {
+  if (!str) return new Date(NaN);
+  const p = str.split('-');
+  return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+}
+
 // ── 보스턴 날짜 자동설정 ──
 (function setBostonDate() {
   const now = new Date();
@@ -1216,7 +1225,7 @@ function renderCalendar(year, month) {
   _allRows.forEach(row => {
     const d = (row[2] || "").replace(/"/g,"").trim();
     if (!d) return;
-    const dt = new Date(d);
+    const dt = parseDateStr(d);
     if (dt.getFullYear() === year && dt.getMonth() === month) {
       if (!dayMap[d]) dayMap[d] = { count: 0, total: 0 };
       dayMap[d].count++;
@@ -1281,7 +1290,7 @@ function renderDateSummary(dk) {
   });
 
   const [Y,M,D] = dk.split("-");
-  const dt  = new Date(dk);
+  const dt  = parseDateStr(dk);
   const dateLabel = `${Y}년 ${M}월 ${D}일 (${DAYS_KO[dt.getDay()]})`;
 
   let totalAll = 0;
@@ -1461,7 +1470,7 @@ function doEditSubmit(d) {
 // ── 삭제 모달 ──
 function openDelModal(encoded) {
   const d   = JSON.parse(decodeURIComponent(encoded));
-  const dt  = new Date(d.dk);
+  const dt  = parseDateStr(d.dk);
   const msg = `${dt.getMonth()+1}월 ${dt.getDate()}일 ${DAYS_KO[dt.getDay()]}요일 ${d.svc} 를 삭제하시겠습니까?`;
   document.getElementById("delMsg").textContent = msg;
   document.getElementById("delName").value   = "";
@@ -1532,15 +1541,23 @@ function checkPw() {
     document.body.classList.add("admin-mode");
 
     // 오늘 날짜(보스턴) 기준으로 달력 열기
-    const bosNow = new Date(new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/New_York" }).format(new Date()));
+    // new Date("YYYY-MM-DD") 은 UTC 자정 → 보스턴(UTC-5)에서 getDate()가 전날 반환
+    // → 날짜 부분을 직접 분리해 new Date(y, m, d) 로컬 생성
+    const bosStr = new Intl.DateTimeFormat("en-CA", {timeZone: "America/New_York"}).format(new Date());
+    const [_by, _bm, _bd] = bosStr.split("-").map(Number);
+    const bosNow = new Date(_by, _bm - 1, _bd); // 보스턴 로컬 자정
     loadCalendar(bosNow.getFullYear(), bosNow.getMonth());
 
-    // 보고서 기본 기간: 최근 2주
-    const fmt = d => d.toISOString().slice(0,10);
-    const twoWeeksAgo = new Date(bosNow); twoWeeksAgo.setDate(bosNow.getDate() - 13);
-    document.getElementById("rptStart").value = fmt(twoWeeksAgo);
-    document.getElementById("rptEnd").value   = fmt(bosNow);
+    // 보고서 기본 기간: 최근 2주 (보스턴 날짜 기준 포맷)
+    const fmtDate = d => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const twoWeeksAgo = new Date(bosNow.getFullYear(), bosNow.getMonth(), bosNow.getDate() - 13);
+    document.getElementById("rptStart").value = fmtDate(twoWeeksAgo);
+    document.getElementById("rptEnd").value   = fmtDate(bosNow);
 
     // 월간보고 기본값: 이전 달 (당월 보고서는 다음 달 초에 작성하는 경우 대비)
     const prevMonth = new Date(bosNow.getFullYear(), bosNow.getMonth(), 1);
