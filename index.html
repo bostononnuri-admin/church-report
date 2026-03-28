@@ -678,7 +678,7 @@
 
 <!-- ───── 공개 달력 (읽기 전용) ───── -->
 <div id="pubCalView" class="pub-cal-wrap">
-  <div class="pub-cal-header">📅 예배 출석 현황 확인</div>
+  <div class="pub-cal-header">📋 제출 내역 확인</div>
   <div class="pub-cal-card">
     <div class="cal-nav">
       <button class="cal-nav-btn" onclick="pubChangeMonth(-1)">‹</button>
@@ -930,10 +930,10 @@ function parseDateStr(str) {
   const y = p.year, m = p.month, d = p.day;
   document.getElementById("worshipDate").value = y + "-" + m + "-" + d;
 
-  // 공개 달력 초기화 (오늘 날짜 기준)
-  const bosNowForPub = new Date(new Intl.DateTimeFormat("en-CA", {
+  // 공개 달력 초기화 (관리자 달력과 동일한 방식)
+  const bosNowPub = new Date(new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York" }).format(new Date()));
-  loadPubCalendar(parseInt(p.year), parseInt(p.month) - 1);
+  loadPubCalendar(bosNowPub.getFullYear(), bosNowPub.getMonth());
 })();
 
 // ── 인원수 필드 동적 변경 ──
@@ -1732,6 +1732,7 @@ function checkPw() {
     document.getElementById("formView").style.display  = "none";
     document.getElementById("successView").style.display = "none";
     document.getElementById("adminView").style.display = "block";
+    document.getElementById("pubCalView").style.display = "none";
     document.body.classList.add("admin-mode");
 
     // 오늘 날짜(보스턴) 기준으로 달력 열기
@@ -1765,6 +1766,7 @@ function checkPw() {
 function logoutAdmin() {
   document.getElementById("adminView").style.display = "none";
   document.getElementById("formView").style.display  = "block";
+  document.getElementById("pubCalView").style.display = "block";
   document.body.classList.remove("edit-mode");
   document.body.classList.remove("admin-mode");
 }
