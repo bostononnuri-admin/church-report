@@ -929,11 +929,6 @@ function parseDateStr(str) {
   // 예배날짜 기본값도 오늘
   const y = p.year, m = p.month, d = p.day;
   document.getElementById("worshipDate").value = y + "-" + m + "-" + d;
-
-  // 공개 달력 초기화 (관리자 달력과 동일한 방식)
-  const bosNowPub = new Date(new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/New_York" }).format(new Date()));
-  loadPubCalendar(bosNowPub.getFullYear(), bosNowPub.getMonth());
 })();
 
 // ── 인원수 필드 동적 변경 ──
@@ -1857,6 +1852,14 @@ function parseCSV(text) {
   }
   return rows;
 }
+
+// ── 공개 달력 초기화 (모든 함수 정의 후 실행) ──
+(function initPubCalendar() {
+  const bosNow = new Date(new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York"
+  }).format(new Date()));
+  loadPubCalendar(bosNow.getFullYear(), bosNow.getMonth());
+})();
 </script>
 </body>
 </html>
