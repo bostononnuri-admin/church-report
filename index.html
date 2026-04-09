@@ -1705,7 +1705,7 @@ function doDeleteRow(sheetRow, rowData, reason, modifier) {
     showToast("삭제 완료!", "ok");
     setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
   };
-  img.src = SCRIPT_URL + "?" + params.toString();l;
+  img.src = SCRIPT_URL + "?" + params.toString();
   setTimeout(function() {
     if (_busy) {
       _busy = false;
@@ -1855,9 +1855,9 @@ function parseCSV(text) {
 
 // ── 공개 달력 초기화 (모든 함수 정의 후 실행) ──
 (function initPubCalendar() {
-  const bosNow = new Date(new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/New_York"
-  }).format(new Date()));
+  const bosStr = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+  const [_by, _bm, _bd] = bosStr.split("-").map(Number);
+  const bosNow = new Date(_by, _bm - 1, _bd); // 로컬 자정으로 생성 (UTC 파싱 버그 방지)
   loadPubCalendar(bosNow.getFullYear(), bosNow.getMonth());
 })();
 </script>
