@@ -1609,7 +1609,11 @@ function editCalcTotal() {
   if (sumEl) sumEl.value = sum + "명";
 }
 
+// ── 수정 전송 전용 busy 플래그 ──
+let _editBusy = false;
+
 function doEditSubmit(d) {
+  if (_editBusy) return; // 중복 제출 방지
   const svc     = d.svc;
   const name    = document.getElementById("editName").value.trim();
   const reason  = document.getElementById("editReason").value.trim();
@@ -1630,30 +1634,42 @@ function doEditSubmit(d) {
     total = parseInt(document.getElementById("ei_total")?.value||0)||0;
   }
 
+  _editBusy = true;
   document.getElementById("editOverlay").classList.remove("open");
   showToast("수정 중...", "");
 
   const params = new URLSearchParams({
-    action:      "submit",
-    reportDate:  newDate,
-    worshipDate: newDate,
-    service:     svc,
+    action:       "editRow",       // 전용 액션으로 분리 (submit과 구분)
+    pw:           ADMIN_PW,
+    originalDate: d.dk,            // 원본 날짜 — Apps Script가 이 값으로 행 검색
+    reportDate:   newDate,         // 저장할 새 날짜
+    worshipDate:  newDate,
+    service:      svc,
     total, onsite, online, student, teacher, other,
-    signature:   d.sig,
-    modifier:    name,
-    reason:      reason,
-    editType:    "수정"
+    signature:    d.sig,
+    modifier:     name,
+    reason:       reason
   });
   const img = new Image();
-  img.onload = img.onerror = function() {
+  // 성공/실패를 분리하여 사용자에게 정확한 결과 안내
+  img.onload = function() {
+    _editBusy = false;
     showToast("수정 완료!", "ok");
     setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
   };
+  img.onerror = function() {
+    _editBusy = false;
+    showToast("오류가 발생했습니다. 다시 시도해주세요.", "err");
+  };
   img.src = SCRIPT_URL + "?" + params.toString();
+  // 8초 타임아웃 — Apps Script 응답이 없을 경우 보험
   setTimeout(function() {
-    showToast("수정 완료!", "ok");
-    setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
-  }, 5000);
+    if (_editBusy) {
+      _editBusy = false;
+      showToast("수정 완료!", "ok");
+      setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
+    }
+  }, 8000);
 }
 
 // ── 삭제 모달 ──
