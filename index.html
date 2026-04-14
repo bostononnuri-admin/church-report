@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>예배 출석 보고</title>
+<link rel="icon" type="image/jpeg" href="logo.jpg">
+<link rel="apple-touch-icon" href="logo.jpg">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
   :root {
@@ -1609,11 +1611,7 @@ function editCalcTotal() {
   if (sumEl) sumEl.value = sum + "명";
 }
 
-// ── 수정 전송 전용 busy 플래그 ──
-let _editBusy = false;
-
 function doEditSubmit(d) {
-  if (_editBusy) return; // 중복 제출 방지
   const svc     = d.svc;
   const name    = document.getElementById("editName").value.trim();
   const reason  = document.getElementById("editReason").value.trim();
@@ -1634,42 +1632,30 @@ function doEditSubmit(d) {
     total = parseInt(document.getElementById("ei_total")?.value||0)||0;
   }
 
-  _editBusy = true;
   document.getElementById("editOverlay").classList.remove("open");
   showToast("수정 중...", "");
 
   const params = new URLSearchParams({
-    action:       "editRow",       // 전용 액션으로 분리 (submit과 구분)
-    pw:           ADMIN_PW,
-    originalDate: d.dk,            // 원본 날짜 — Apps Script가 이 값으로 행 검색
-    reportDate:   newDate,         // 저장할 새 날짜
-    worshipDate:  newDate,
-    service:      svc,
+    action:      "submit",
+    reportDate:  newDate,
+    worshipDate: newDate,
+    service:     svc,
     total, onsite, online, student, teacher, other,
-    signature:    d.sig,
-    modifier:     name,
-    reason:       reason
+    signature:   d.sig,
+    modifier:    name,
+    reason:      reason,
+    editType:    "수정"
   });
   const img = new Image();
-  // 성공/실패를 분리하여 사용자에게 정확한 결과 안내
-  img.onload = function() {
-    _editBusy = false;
+  img.onload = img.onerror = function() {
     showToast("수정 완료!", "ok");
     setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
   };
-  img.onerror = function() {
-    _editBusy = false;
-    showToast("오류가 발생했습니다. 다시 시도해주세요.", "err");
-  };
   img.src = SCRIPT_URL + "?" + params.toString();
-  // 8초 타임아웃 — Apps Script 응답이 없을 경우 보험
   setTimeout(function() {
-    if (_editBusy) {
-      _editBusy = false;
-      showToast("수정 완료!", "ok");
-      setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
-    }
-  }, 8000);
+    showToast("수정 완료!", "ok");
+    setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
+  }, 5000);
 }
 
 // ── 삭제 모달 ──
@@ -1721,7 +1707,7 @@ function doDeleteRow(sheetRow, rowData, reason, modifier) {
     showToast("삭제 완료!", "ok");
     setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
   };
-  img.src = SCRIPT_URL + "?" + params.toString();
+  img.src = SCRIPT_URL + "?" + params.toString();l;
   setTimeout(function() {
     if (_busy) {
       _busy = false;
@@ -1871,9 +1857,9 @@ function parseCSV(text) {
 
 // ── 공개 달력 초기화 (모든 함수 정의 후 실행) ──
 (function initPubCalendar() {
-  const bosStr = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
-  const [_by, _bm, _bd] = bosStr.split("-").map(Number);
-  const bosNow = new Date(_by, _bm - 1, _bd); // 로컬 자정으로 생성 (UTC 파싱 버그 방지)
+  const bosNow = new Date(new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York"
+  }).format(new Date()));
   loadPubCalendar(bosNow.getFullYear(), bosNow.getMonth());
 })();
 </script>
