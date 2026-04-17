@@ -917,6 +917,18 @@ function parseDateStr(str) {
   return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
 }
 
+// ── HTML 이스케이프 (XSS 방지) ──
+// 서명 등 사용자 입력값을 innerHTML에 삽입할 때 반드시 이 함수를 거칠 것
+function escHtml(s) {
+  if (s === null || s === undefined) return "";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // ── 보스턴 날짜 자동설정 ──
 (function setBostonDate() {
   const now = new Date();
@@ -1339,7 +1351,7 @@ function renderPubDateSummary(dk) {
     const entry = map[svc];
     if (!entry) {
       rows_html += `<div class="sum-row">
-        <span class="sum-svc">${svc}</span>
+        <span class="sum-svc">${escHtml(svc)}</span>
         <span class="sum-missing">미제출</span>
       </div>`;
       return;
@@ -1358,7 +1370,7 @@ function renderPubDateSummary(dk) {
     else if (SVC3.includes(svc)) detail = `학생 ${student}  교역자+교사 ${teacher}  그외 ${other}`;
 
     rows_html += `<div class="sum-row">
-      <div class="sum-svc">${svc}</div>
+      <div class="sum-svc">${escHtml(svc)}</div>
       <div>
         ${detail ? `<div class="sum-detail">${detail}</div>` : ""}
         <div class="sum-cnt">${total}명</div>
@@ -1491,7 +1503,7 @@ function renderDateSummary(dk) {
     const entry = map[svc];
     if (!entry) {
       rows_html += `<div class="sum-row">
-        <span class="sum-svc">${svc}</span>
+        <span class="sum-svc">${escHtml(svc)}</span>
         <span class="sum-missing">미제출</span>
       </div>`;
       return;
@@ -1517,7 +1529,7 @@ function renderDateSummary(dk) {
     }));
 
     rows_html += `<div class="sum-row">
-      <div class="sum-svc">${svc}<br><span class="sum-sig">✍️ ${sig}</span></div>
+      <div class="sum-svc">${escHtml(svc)}<br><span class="sum-sig">✍️ ${escHtml(sig)}</span></div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div>
           ${detail ? `<div class="sum-detail">${detail}</div>` : ""}
@@ -1612,6 +1624,7 @@ function editCalcTotal() {
 }
 
 function doEditSubmit(d) {
+  if (_busy) return;
   const svc     = d.svc;
   const name    = document.getElementById("editName").value.trim();
   const reason  = document.getElementById("editReason").value.trim();
@@ -1632,6 +1645,7 @@ function doEditSubmit(d) {
     total = parseInt(document.getElementById("ei_total")?.value||0)||0;
   }
 
+  _busy = true;
   document.getElementById("editOverlay").classList.remove("open");
   showToast("수정 중...", "");
 
@@ -1648,13 +1662,18 @@ function doEditSubmit(d) {
   });
   const img = new Image();
   img.onload = img.onerror = function() {
+    if (!_busy) return;
+    _busy = false;
     showToast("수정 완료!", "ok");
     setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
   };
   img.src = SCRIPT_URL + "?" + params.toString();
   setTimeout(function() {
-    showToast("수정 완료!", "ok");
-    setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
+    if (_busy) {
+      _busy = false;
+      showToast("수정 완료!", "ok");
+      setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
+    }
   }, 5000);
 }
 
@@ -1707,7 +1726,7 @@ function doDeleteRow(sheetRow, rowData, reason, modifier) {
     showToast("삭제 완료!", "ok");
     setTimeout(() => loadCalendar(_calYear, _calMonth), 2500);
   };
-  img.src = SCRIPT_URL + "?" + params.toString();l;
+  img.src = SCRIPT_URL + "?" + params.toString();
   setTimeout(function() {
     if (_busy) {
       _busy = false;
@@ -1768,70 +1787,6 @@ function logoutAdmin() {
   document.body.classList.remove("admin-mode");
 }
 
-async function loadAdminData() {
-  const cards = document.getElementById("adminCards");
-  cards.innerHTML = "<div style='text-align:center;padding:30px;color:#556789;font-size:14px;'>불러오는 중...</div>";
-  try {
-    const url = `https://docs.google.com/spreadsheets/d/\${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=출석보고`;
-    const res = await fetch(url);
-    const text = await res.text();
-    const rows = parseCSV(text);
-    if (rows.length <= 1) {
-      cards.innerHTML = "<div class=\"adm-empty\">데이터가 없습니다.</div>"; return;
-    }
-    cards.innerHTML = "";
-    // rows[0] = header, rows[1..] = data (newest first)
-    const data = rows.slice(1).reverse();
-    data.forEach((row, i) => {
-      const realIdx = rows.length - 1 - i; // 1-based row in sheet
-      const ts      = row[0] || "";
-      const repDate = row[1] || "";
-      const wDate   = row[2] || "";
-      const svc     = row[3] || "";
-      const total   = row[4] || "";
-      const onsite  = row[5] || "";
-      const online  = row[6] || "";
-      const student = row[7] || "";
-      const teacher = row[8] || "";
-      const other   = row[9] || "";
-      const sig     = row[10] || "";
-
-      // build badges
-      let badges = "";
-      if (onsite || online) {
-        if (onsite)  badges += `<span class="badge">현장 \${onsite}명</span>`;
-        if (online)  badges += `<span class="badge">온라인 \${online}명</span>`;
-      } else if (student || teacher || other) {
-        if (student) badges += `<span class="badge">학생 \${student}명</span>`;
-        if (teacher) badges += `<span class="badge">교역자+교사 \${teacher}명</span>`;
-        if (other)   badges += `<span class="badge">그외 \${other}명</span>`;
-      } else {
-        badges += `<span class="badge">총 \${total}명</span>`;
-      }
-
-      const card = document.createElement("div");
-      card.className = "adm-card";
-      card.innerHTML = `
-        <div class="adm-card-top">
-          <div>
-            <div class="adm-svc">\${svc}</div>
-            <div class="adm-date">예배일 \${wDate} · 보고일 \${repDate}</div>
-          </div>
-        </div>
-        <div class="adm-badges">\${badges}</div>
-        <div class="adm-sig">✍️ \${sig}</div>
-        <div class="adm-acts">
-          <button class="btn-del" onclick="deleteRow(\${realIdx}, this)">삭제</button>
-        </div>`;
-      cards.appendChild(card);
-    });
-  } catch(e) {
-    cards.innerHTML = "<div class=\"adm-empty\">불러오기 실패</div>";
-  }
-}
-
-
-
 // ── CSV PARSER ──
 function parseCSV(text) {
   const rows = [];
@@ -1857,9 +1812,13 @@ function parseCSV(text) {
 
 // ── 공개 달력 초기화 (모든 함수 정의 후 실행) ──
 (function initPubCalendar() {
-  const bosNow = new Date(new Intl.DateTimeFormat("en-CA", {
+  // ⚠️ new Date("YYYY-MM-DD")는 UTC 자정 → 보스턴(UTC-4/-5)에서 전날로 밀림
+  //    → 문자열을 직접 분리해 new Date(y, m, d)로 로컬 자정 생성
+  const bosStr = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York"
-  }).format(new Date()));
+  }).format(new Date());
+  const [_by, _bm, _bd] = bosStr.split("-").map(Number);
+  const bosNow = new Date(_by, _bm - 1, _bd);
   loadPubCalendar(bosNow.getFullYear(), bosNow.getMonth());
 })();
 </script>
