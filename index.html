@@ -965,7 +965,8 @@
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzztaNejz8nkgug16NWI3lZtBlMSSTUHpTh0j4odURkmlWrqa67t0s8mvbaa70fGFS6_Q/exec";
 const SHEET_ID   = "1VNkF5t-MJWc5abCvFXdA-JlT0YEf-Y00cN1kPkF3lLI";
-const ADMIN_PW   = "4Federalst!";
+// 관리자 세션 토큰 — 서버 로그인 성공 시 발급, 로그아웃/새로고침 시 초기화
+let _adminToken = null;
 
 // ── 날짜 문자열 파싱 (로컬 기준, UTC 오프셋 문제 방지) ──
 // "YYYY-MM-DD" → new Date()는 UTC 기준 파싱 → 보스턴(UTC-5)에서 전날로 밀림
@@ -1258,7 +1259,7 @@ async function generateReport() {
 
   // fetch로 호출하면 Apps Script 리다이렉트 중 파라미터가 손실됨
   // 새 탭으로 직접 열면 Apps Script가 문서 생성 후 자동 리다이렉트
-  const url = SCRIPT_URL + "?action=report&pw=" + encodeURIComponent(ADMIN_PW) + "&startDate=" + start + "&endDate=" + end;
+  const url = SCRIPT_URL + "?action=report&token=" + encodeURIComponent(_adminToken) + "&startDate=" + start + "&endDate=" + end;
   window.open(url, "_blank");
   status.innerHTML = '<div class="rpt-status">새 탭에서 보고서가 생성됩니다. 잠시 기다려주세요...</div>';
 }
@@ -1278,7 +1279,7 @@ function generateMonthlyReport() {
   const mm = String(m).padStart(2, "0");
   const url = SCRIPT_URL
     + "?action=monthlyReport"
-    + "&pw="     + encodeURIComponent(ADMIN_PW)
+    + "&token="  + encodeURIComponent(_adminToken)
     + "&year="   + y
     + "&month="  + mm
     + "&author=" + encodeURIComponent(author);
@@ -1746,7 +1747,7 @@ function doDeleteRow(sheetRow, rowData, reason, modifier) {
   showToast("삭제 중...", "");
   const params = new URLSearchParams({
     action:   "delete",
-    pw:       ADMIN_PW,
+    token:    _adminToken,
     rowIndex: sheetRow,
     reason:   reason   || "",
     modifier: modifier || "",
@@ -1781,45 +1782,70 @@ function openAdmin() {
   document.getElementById("pwOverlay").classList.add("open");
   setTimeout(() => document.getElementById("pwInput").focus(), 100);
 }
-function checkPw() {
-  if (document.getElementById("pwInput").value === ADMIN_PW) {
-    document.getElementById("pwOverlay").classList.remove("open");
-    document.getElementById("pwInput").value = "";
-    document.getElementById("formView").style.display  = "none";
-    document.getElementById("successView").style.display = "none";
-    document.getElementById("adminView").style.display = "block";
-    document.getElementById("pubCalView").style.display = "none";
-    document.body.classList.add("admin-mode");
 
-    // 오늘 날짜(보스턴) 기준으로 달력 열기
-    // new Date("YYYY-MM-DD") 은 UTC 자정 → 보스턴(UTC-5)에서 getDate()가 전날 반환
-    // → 날짜 부분을 직접 분리해 new Date(y, m, d) 로컬 생성
-    const bosStr = new Intl.DateTimeFormat("en-CA", {timeZone: "America/New_York"}).format(new Date());
-    const [_by, _bm, _bd] = bosStr.split("-").map(Number);
-    const bosNow = new Date(_by, _bm - 1, _bd); // 보스턴 로컬 자정
-    loadCalendar(bosNow.getFullYear(), bosNow.getMonth());
+// 관리자 모드 진입 공통 로직
+function _enterAdminMode() {
+  document.getElementById("formView").style.display  = "none";
+  document.getElementById("successView").style.display = "none";
+  document.getElementById("adminView").style.display = "block";
+  document.getElementById("pubCalView").style.display = "none";
+  document.body.classList.add("admin-mode");
 
-    // 보고서 기본 기간: 최근 2주 (보스턴 날짜 기준 포맷)
-    const fmtDate = d => {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    };
-    const twoWeeksAgo = new Date(bosNow.getFullYear(), bosNow.getMonth(), bosNow.getDate() - 13);
-    document.getElementById("rptStart").value = fmtDate(twoWeeksAgo);
-    document.getElementById("rptEnd").value   = fmtDate(bosNow);
+  const bosStr = new Intl.DateTimeFormat("en-CA", {timeZone: "America/New_York"}).format(new Date());
+  const [_by, _bm, _bd] = bosStr.split("-").map(Number);
+  const bosNow = new Date(_by, _bm - 1, _bd);
+  loadCalendar(bosNow.getFullYear(), bosNow.getMonth());
 
-    // 월간보고 기본값: 이전 달 (당월 보고서는 다음 달 초에 작성하는 경우 대비)
-    const prevMonth = new Date(bosNow.getFullYear(), bosNow.getMonth(), 1);
-    prevMonth.setMonth(prevMonth.getMonth() - 1);
-    document.getElementById("mrYear").value  = prevMonth.getFullYear();
-    document.getElementById("mrMonth").value = prevMonth.getMonth() + 1;
-  } else {
-    showToast("비밀번호가 틀렸습니다", "err");
+  const fmtDate = d => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+  const twoWeeksAgo = new Date(bosNow.getFullYear(), bosNow.getMonth(), bosNow.getDate() - 13);
+  document.getElementById("rptStart").value = fmtDate(twoWeeksAgo);
+  document.getElementById("rptEnd").value   = fmtDate(bosNow);
+
+  const prevMonth = new Date(bosNow.getFullYear(), bosNow.getMonth(), 1);
+  prevMonth.setMonth(prevMonth.getMonth() - 1);
+  document.getElementById("mrYear").value  = prevMonth.getFullYear();
+  document.getElementById("mrMonth").value = prevMonth.getMonth() + 1;
+}
+
+async function checkPw() {
+  const input = document.getElementById("pwInput").value;
+  if (!input) return showToast("비밀번호를 입력해주세요", "err");
+
+  const confirmBtn = document.getElementById("pwOverlay").querySelector(".btn-conf:last-of-type");
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = "확인 중...";
+
+  try {
+    const res  = await fetch(SCRIPT_URL + "?action=login&pw=" + encodeURIComponent(input));
+    const data = await res.json();
+    if (data.success && data.token) {
+      _adminToken = data.token;
+      document.getElementById("pwOverlay").classList.remove("open");
+      document.getElementById("pwInput").value = "";
+      _enterAdminMode();
+    } else {
+      showToast("비밀번호가 틀렸습니다", "err");
+      document.getElementById("pwInput").value = "";
+    }
+  } catch(e) {
+    showToast("서버 연결 오류. 잠시 후 다시 시도해주세요.", "err");
+  } finally {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = "확인";
   }
 }
 function logoutAdmin() {
+  // 서버에서 토큰 무효화 (fire-and-forget)
+  if (_adminToken) {
+    fetch(SCRIPT_URL + "?action=logout&token=" + encodeURIComponent(_adminToken))
+      .catch(() => {});
+    _adminToken = null;
+  }
   document.getElementById("adminView").style.display = "none";
   document.getElementById("formView").style.display  = "block";
   document.getElementById("pubCalView").style.display = "block";
