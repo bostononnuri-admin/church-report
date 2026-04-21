@@ -42,6 +42,9 @@
     height: 3px;
     background: var(--gold);
   }
+  /* 관리자/수정 모드에서는 메인 헤더 골드 바 숨김 (관리자 헤더와 연결되므로) */
+  body.admin-mode .hdr::after,
+  body.edit-mode .hdr::after { display: none; }
   .hdr-bar {
     width: 4px; height: 36px;
     background: var(--gold);
@@ -365,6 +368,14 @@
     background: var(--navy); color: #fff;
     padding: 13px 18px;
     display: flex; align-items: center; justify-content: space-between;
+    position: relative;
+  }
+  .adm-hdr::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gold);
   }
   .adm-hdr h2 { font-size: 15px; font-weight: 700; }
   .btn-out {
