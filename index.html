@@ -697,14 +697,15 @@
         <option>주일 1부 예배</option>
         <option>주일 2부 예배</option>
         <option>주일 3부 EM예배</option>
-        <option>새벽예배</option>
-        <option>수요예배</option>
-        <option>예꿈</option>
+        <option>예꿈 영아부</option>
+        <option>예꿈 유치부</option>
         <option>꿈땅</option>
-        <option>중등부</option>
-        <option>고등부</option>
+        <option>PW 중등부</option>
+        <option>PW 고등부</option>
         <option>이음</option>
         <option>위윈</option>
+        <option>새벽예배</option>
+        <option>수요예배</option>
         <option>금요여성예배</option>
       </select>
     </div>
@@ -1005,9 +1006,18 @@ function parseDateStr(str) {
   document.getElementById("worshipDate").value = y + "-" + m + "-" + d;
 })();
 
+// ── 예배명 별칭 (구 이름 → 현행 이름)   ※ apps_script_new.gs의 SVC_ALIAS와 반드시 동일 유지 ──
+// 2026-11-01 개편: 예꿈→예꿈 유치부, 중등부→PW 중등부, 고등부→PW 고등부
+// 시트의 과거 데이터는 그대로 두고, 시트에서 읽어온 예배명은 canonSvc()로 현행 이름으로 통일해서 쓴다.
+const SVC_ALIAS = { "예꿈": "예꿈 유치부", "중등부": "PW 중등부", "고등부": "PW 고등부" };
+function canonSvc(name) {
+  const n = String(name ?? "").replace(/"/g, "").trim();
+  return SVC_ALIAS[n] || n;
+}
+
 // ── 인원수 필드 동적 변경 ──
 const SERVICE_2 = ["새벽예배"];
-const SERVICE_3 = ["예꿈", "꿈땅", "중등부", "고등부"];
+const SERVICE_3 = ["예꿈 영아부", "예꿈 유치부", "꿈땅", "PW 중등부", "PW 고등부"];   // 학생 / 교역자+교사 / 그외
 const SERVICE_4 = ["금요여성예배"]; // 현장 + 줌
 
 function sanitizeNatural(el) {
@@ -1122,8 +1132,8 @@ async function submitForm() {
     const rows = parseCSV(text).slice(1);
     const dup  = rows.find(r => {
       const d = (r[2] || "").replace(/"/g,"").trim();
-      const s = (r[3] || "").replace(/"/g,"").trim();
-      return d === worshipDate && s === service;
+      const s = canonSvc(r[3]);   // 시트의 "예꿈"도 "예꿈 유치부"와 같은 예배로 판정
+      return d === worshipDate && s === canonSvc(service);
     });
     if (dup) {
       const [y,m,d] = worshipDate.split("-");
@@ -1303,19 +1313,30 @@ function generateMonthlyReport() {
 }
 
 // ── 달력 전역 상태 ──
-// 예배 항목 (2026-06-01 기준 분기)
-//  · 위윈EM = 폐지된 예배. 6/1 이전 날짜의 과거 기록 표시를 위해서만 유지.
-//  · 주일 3부 EM예배 = 6/1부터 등장하는 신설 예배(성인 그룹), 위치는 주일 2부 다음(3번째).
-const SVC_CUTOFF       = "2026-06-01";
-const SERVICES_LEGACY  = ["주일 1부 예배","주일 2부 예배","새벽예배","수요예배","예꿈","꿈땅","중등부","고등부","이음","위윈","위윈EM","금요여성예배"];
-const SERVICES_CURRENT = ["주일 1부 예배","주일 2부 예배","주일 3부 EM예배","새벽예배","수요예배","예꿈","꿈땅","중등부","고등부","이음","위윈","금요여성예배"];
-// dk("YYYY-MM-DD") 기준일 이후면 현행 목록, 이전이면 레거시 목록 반환
+// 예배 항목 전체 목록 (표시 순서 = 2026-11-01 개편 순서). 폐지·신설 예배는 SVC_PERIOD로 날짜별 노출 제어.
+//  · 2026-06-01: 위윈EM 폐지(대청) → 주일 3부 EM예배 신설(성인)
+//  · 2026-11-01: 예꿈 영아부 신설(차세대) / 예꿈·중등부·고등부 개명(SVC_ALIAS로 과거 기록과 연결) / 새벽·수요예배 순서 뒤로
+const SERVICES_ALL = ["주일 1부 예배","주일 2부 예배","주일 3부 EM예배","예꿈 영아부","예꿈 유치부","꿈땅","PW 중등부","PW 고등부","이음","위윈","위윈EM","새벽예배","수요예배","금요여성예배"];
+// 예배별 운영 기간 ("YYYY-MM-DD"). 여기 없는 예배 = 항상 표시.   ※ 백엔드 SVC_PERIOD와 동일 유지
+const SVC_PERIOD = {
+  "위윈EM":          { end:   "2026-05-31" },   // 폐지
+  "주일 3부 EM예배": { start: "2026-06-01" },   // 신설
+  "예꿈 영아부":     { start: "2026-11-01" }    // 신설
+};
+// dk("YYYY-MM-DD") 날짜에 운영 중인 예배 목록 (0패딩 문자열이라 사전식 비교 안전)
 function servicesForDate(dk) {
-  return (dk >= SVC_CUTOFF) ? SERVICES_CURRENT : SERVICES_LEGACY;
+  return SERVICES_ALL.filter(svc => {
+    const p = SVC_PERIOD[svc];
+    if (!p) return true;
+    if (p.start && dk < p.start) return false;
+    if (p.end   && dk > p.end)   return false;
+    return true;
+  });
 }
-const SVC2 = ["새벽예배"];
-const SVC3 = ["예꿈","꿈땅","중등부","고등부"];
-const SVC4 = ["금요여성예배"];
+// 인원 필드 분류 — 위쪽 SERVICE_2/3/4와 같은 목록 (한 곳만 고치면 되도록 참조)
+const SVC2 = SERVICE_2;
+const SVC3 = SERVICE_3;
+const SVC4 = SERVICE_4;
 let _calYear, _calMonth, _allRows = [], _selectedDate = null;
 const DAYS_KO = ["일","월","화","수","목","금","토"];
 
@@ -1405,7 +1426,7 @@ function renderPubDateSummary(dk) {
   const map = {};
   _pubRows.forEach((r, i) => {
     const rd = (r[2]||"").replace(/"/g,"").trim();
-    const rs = (r[3]||"").replace(/"/g,"").trim();
+    const rs = canonSvc(r[3]);   // 과거 "예꿈" 기록도 "예꿈 유치부" 줄에 표시
     if (rd === dk) map[rs] = { row: r };
   });
 
@@ -1416,8 +1437,13 @@ function renderPubDateSummary(dk) {
   let totalAll = 0;
   let rows_html = "";
 
-  servicesForDate(dk).forEach(svc => {
+  // 안전장치: 그 날짜 목록에 없는 예배명인데 데이터가 있으면(기준일 이전 제출·구버전 앱 등) 끝에 "목록 외"로 표시
+  const list  = servicesForDate(dk);
+  const extra = Object.keys(map).filter(s => !list.includes(s));
+
+  list.concat(extra).forEach(svc => {
     const entry = map[svc];
+    const label = list.includes(svc) ? svc : `${escHtml(svc)} <span class="sum-missing">목록 외</span>`;
     if (!entry) {
       rows_html += `<div class="sum-row">
         <span class="sum-svc">${svc}</span>
@@ -1439,7 +1465,7 @@ function renderPubDateSummary(dk) {
     else if (SVC3.includes(svc)) detail = `학생 ${student}  교역자+교사 ${teacher}  그외 ${other}`;
 
     rows_html += `<div class="sum-row">
-      <div class="sum-svc">${svc}</div>
+      <div class="sum-svc">${label}</div>
       <div>
         ${detail ? `<div class="sum-detail">${detail}</div>` : ""}
         <div class="sum-cnt">${total}명</div>
@@ -1557,7 +1583,7 @@ function renderDateSummary(dk) {
   // rowIndex는 시트에서의 실제 행 번호(1-based, 헤더 포함) → _allRows index + 2
   _allRows.forEach((r, i) => {
     const rd = (r[2]||"").replace(/"/g,"").trim();
-    const rs = (r[3]||"").replace(/"/g,"").trim();
+    const rs = canonSvc(r[3]);   // 과거 "예꿈" 기록도 "예꿈 유치부" 줄에 표시. 수정 시 백엔드도 별칭으로 같은 행을 찾아 덮어씀
     if (rd === dk) map[rs] = { row: r, sheetRow: i + 2 };
   });
 
@@ -1568,8 +1594,13 @@ function renderDateSummary(dk) {
   let totalAll = 0;
   let rows_html = "";
 
-  servicesForDate(dk).forEach(svc => {
+  // 안전장치: 그 날짜 목록에 없는 예배명인데 데이터가 있으면 끝에 "목록 외"로 표시(수정·삭제 가능)
+  const list  = servicesForDate(dk);
+  const extra = Object.keys(map).filter(s => !list.includes(s));
+
+  list.concat(extra).forEach(svc => {
     const entry = map[svc];
+    const label = list.includes(svc) ? svc : `${escHtml(svc)} <span class="sum-missing">목록 외</span>`;
     if (!entry) {
       rows_html += `<div class="sum-row">
         <span class="sum-svc">${svc}</span>
@@ -1593,12 +1624,13 @@ function renderDateSummary(dk) {
     else if (SVC3.includes(svc)) detail = `학생 ${student}  교역자+교사 ${teacher}  그외 ${other}`;
 
     // 수정/삭제 버튼에 필요한 데이터를 JSON으로 인코딩
+    // encodeURIComponent는 작은따옴표(')를 안 바꾸므로 onclick="...('...')" 속성이 깨지지 않게 %27로 추가 변환
     const rowData = encodeURIComponent(JSON.stringify({
       sheetRow, svc, dk, total, onsite, online, student, teacher, other, sig
-    }));
+    })).replace(/'/g, "%27");
 
     rows_html += `<div class="sum-row">
-      <div class="sum-svc">${svc}<br><span class="sum-sig">✍️ ${escHtml(sig)}</span></div>
+      <div class="sum-svc">${label}<br><span class="sum-sig">✍️ ${escHtml(sig)}</span></div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div>
           ${detail ? `<div class="sum-detail">${detail}</div>` : ""}
