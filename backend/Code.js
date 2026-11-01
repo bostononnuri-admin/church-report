@@ -112,10 +112,11 @@ function doGet(e) {
   var action = params.action || "";
 
   if (action === "ping") {
-    return jsonResponse({ success: true, message: "OK", version: "v6" });
+    return jsonResponse({ success: true, message: "OK", version: "v7" });
   }
   if (action === "login") {
-    return handleLogin(params.pw || "");
+    // 2026-11 v7: 주소(GET)로 비밀번호를 받던 옛 방식 중단 → 로그인은 doPost로만
+    return jsonResponse({ success: false, message: "로그인 방식이 바뀌었습니다. 페이지를 새로고침한 뒤 다시 시도해주세요." });
   }
   if (action === "logout") {
     if (params.token) {
@@ -144,7 +145,7 @@ function doGet(e) {
   }
 
   // action 없음 → 단순 확인용
-  return jsonResponse({ success: true, message: "Server running v6" });
+  return jsonResponse({ success: true, message: "Server running v7" });
 }
 
 // ── 관리자 로그인 → 1시간짜리 토큰 발급 ──

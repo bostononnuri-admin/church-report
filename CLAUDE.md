@@ -46,6 +46,7 @@
   - 인원 필드 분류 `SERVICE_2/3/4` (index.html, `SVC2/3/4`는 이를 참조) ↔ `SVC2/SVC3` (gs `handleReport`)
   - 예배 표시 순서 `SERVICES_ALL` (index.html) ↔ `SERVICE_ORDER` (gs `handleReport`)
   - OMA 카테고리 `CAT_ADULT/CAT_DAEC/CAT_NG` (gs `handleMonthlyReport` 한 곳)
+  - 이름 입력 규칙 `NAME_RE`·`cleanName` (index.html ↔ gs). 서명·수정자 이름 = 한글·영문·띄어쓰기 1~20자. 제출은 응답을 안 보므로 화면 검사가 빠지면 사용자는 "성공"을 보고 실제로는 거부된다
 - 예배 항목을 추가·개명·폐지할 때의 7단계 체크리스트는 `docs/project_knowledge.md`의 "예배 구분" 섹션에 있다. 반드시 그 순서대로 전부 확인한다.
 - UI: 비밀번호 모달은 `center-modal`(정중앙, 취소/확인), 수정·삭제·덮어쓰기 모달은 하단 슬라이드업 시트. 관리자 모드 진입 시 `pubCalView` 숨김, 로그아웃 시 복원. 보고서 섹션(`.rpt-box`, `.mr-box`)은 수정모드에서만 표시.
 
