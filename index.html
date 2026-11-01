@@ -728,7 +728,7 @@
     <span class="step-num">5 / 5</span>
     <div class="step-label">서명</div>
     <div class="sig-box">
-      <input class="sig-inp" id="signature" type="text" placeholder="이름을 입력하세요">
+      <input class="sig-inp" id="signature" type="text" maxlength="20" placeholder="이름을 입력하세요 (한글·영문)">
       <div class="sig-line">위 내용이 정확함을 확인합니다</div>
     </div>
   </div>
@@ -794,7 +794,7 @@
     <p id="dupMsg" style="font-size:14px;color:var(--ink);line-height:1.7;margin-bottom:14px;"></p>
     <div style="margin-bottom:10px;">
       <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">덮어쓰는 사람 <span style="color:var(--red);">*</span></label>
-      <input id="dupName" type="text"
+      <input id="dupName" type="text" maxlength="20"
         style="width:100%;padding:10px 12px;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;
                border:1.5px solid var(--border);border-radius:9px;outline:none;
                background:var(--bg);box-sizing:border-box;color:var(--ink);"
@@ -802,7 +802,7 @@
     </div>
     <div style="margin-bottom:16px;">
       <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">덮어쓰기 사유 <span style="color:var(--red);">*</span></label>
-      <textarea id="dupReason" rows="2"
+      <textarea id="dupReason" rows="2" maxlength="200"
         style="width:100%;padding:10px 12px;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;
                border:1.5px solid var(--border);border-radius:9px;outline:none;
                background:var(--bg);resize:none;box-sizing:border-box;color:var(--ink);"
@@ -910,7 +910,7 @@
     <div id="editFields"></div>
     <div style="margin-top:14px;">
       <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">수정한 사람 <span style="color:var(--red);">*</span></label>
-      <input id="editName" type="text"
+      <input id="editName" type="text" maxlength="20"
         style="width:100%;padding:10px 12px;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;
                border:1.5px solid var(--border);border-radius:9px;outline:none;
                background:var(--bg);box-sizing:border-box;color:var(--ink);margin-bottom:10px;"
@@ -918,7 +918,7 @@
     </div>
     <div>
       <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">수정 사유 <span style="color:var(--red);">*</span></label>
-      <textarea id="editReason" rows="2"
+      <textarea id="editReason" rows="2" maxlength="200"
         style="width:100%;padding:10px 12px;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;
                border:1.5px solid var(--border);border-radius:9px;outline:none;
                background:var(--bg);resize:none;box-sizing:border-box;color:var(--ink);"
@@ -940,7 +940,7 @@
     <p id="delMsg" style="font-size:14px;color:var(--ink);line-height:1.7;margin-bottom:14px;"></p>
     <div style="margin-bottom:10px;">
       <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">삭제한 사람 <span style="color:var(--red);">*</span></label>
-      <input id="delName" type="text"
+      <input id="delName" type="text" maxlength="20"
         style="width:100%;padding:10px 12px;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;
                border:1.5px solid var(--border);border-radius:9px;outline:none;
                background:var(--bg);box-sizing:border-box;color:var(--ink);"
@@ -948,7 +948,7 @@
     </div>
     <div style="margin-bottom:16px;">
       <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-s);margin-bottom:5px;letter-spacing:.5px;">삭제 사유 <span style="color:var(--red);">*</span></label>
-      <textarea id="delReason" rows="2"
+      <textarea id="delReason" rows="2" maxlength="200"
         style="width:100%;padding:10px 12px;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;
                border:1.5px solid var(--border);border-radius:9px;outline:none;
                background:var(--bg);resize:none;box-sizing:border-box;color:var(--ink);"
@@ -980,6 +980,14 @@ function escHtml(s) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+// ── 이름 입력 규칙 ──   ※ 백엔드(Code.js) NAME_RE / cleanName과 반드시 동일 유지
+// 서명·수정자 이름: 한글 완성형·영문·띄어쓰기만, 1~20자 (숫자·기호·낱자 자모 불가)
+// 백엔드도 같은 규칙으로 막지만, 제출은 응답을 확인하지 않으므로 화면에서 먼저 걸러야 사용자가 안내를 받는다.
+const NAME_RE = /^[가-힣a-zA-Z ]{1,20}$/;
+const SIG_RULE_TOAST  = "서명은 한글 또는 영문으로 20자 이내로 입력해주세요";
+const NAME_RULE_TOAST = "이름은 한글 또는 영문으로 20자 이내로 입력해주세요";
+function cleanName(s) { return String(s == null ? "" : s).replace(/\s+/g, " ").trim(); }
 
 // ── 날짜 문자열 파싱 (로컬 기준, UTC 오프셋 문제 방지) ──
 // "YYYY-MM-DD" → new Date()는 UTC 기준 파싱 → 보스턴(UTC-5)에서 전날로 밀림
@@ -1078,9 +1086,10 @@ function showDupModal(message, onConfirm) {
   document.getElementById("dupReason").value = "";
   document.getElementById("dupOverlay").classList.add("open");
   document.getElementById("dupConfirmBtn").onclick = function() {
-    const name   = document.getElementById("dupName").value.trim();
+    const name   = cleanName(document.getElementById("dupName").value);
     const reason = document.getElementById("dupReason").value.trim();
     if (!name)   return showToast("덮어쓰는 사람 이름을 입력해주세요", "err");
+    if (!NAME_RE.test(name)) return showToast(NAME_RULE_TOAST, "err");
     if (!reason) return showToast("덮어쓰기 사유를 입력해주세요", "err");
     document.getElementById("dupOverlay").classList.remove("open");
     onConfirm(name, reason);
@@ -1094,12 +1103,13 @@ async function submitForm() {
   const reportDate  = document.getElementById("reportDate").value;
   const worshipDate = document.getElementById("worshipDate").value;
   const service     = document.getElementById("serviceType").value;
-  const sig         = document.getElementById("signature").value.trim();
+  const sig         = cleanName(document.getElementById("signature").value);
   const svc         = service;
 
   if (!worshipDate) return showToast("예배 날짜를 선택해주세요", "err");
   if (!service)     return showToast("예배를 선택해주세요", "err");
   if (!sig)         return showToast("서명을 입력해주세요", "err");
+  if (!NAME_RE.test(sig)) return showToast(SIG_RULE_TOAST, "err");
 
   // collect counts
   let total=0, onsite=0, online=0, student=0, teacher=0, other=0;
@@ -1726,9 +1736,10 @@ function editCalcTotal() {
 
 function doEditSubmit(d) {
   const svc     = d.svc;
-  const name    = document.getElementById("editName").value.trim();
+  const name    = cleanName(document.getElementById("editName").value);
   const reason  = document.getElementById("editReason").value.trim();
   if (!name)   return showToast("수정한 사람 이름을 입력해주세요", "err");
+  if (!NAME_RE.test(name)) return showToast(NAME_RULE_TOAST, "err");
   if (!reason) return showToast("수정 사유를 입력해주세요", "err");
   const newDate = document.getElementById("ei_date")?.value || d.dk;
   let total=0, onsite=0, online=0, student=0, teacher=0, other=0;
@@ -1781,9 +1792,10 @@ function openDelModal(encoded) {
   document.getElementById("delReason").value = "";
   document.getElementById("delOverlay").classList.add("open");
   document.getElementById("delConfirmBtn").onclick = function() {
-    const name   = document.getElementById("delName").value.trim();
+    const name   = cleanName(document.getElementById("delName").value);
     const reason = document.getElementById("delReason").value.trim();
     if (!name)   return showToast("삭제한 사람 이름을 입력해주세요", "err");
+    if (!NAME_RE.test(name)) return showToast(NAME_RULE_TOAST, "err");
     if (!reason) return showToast("삭제 사유를 입력해주세요", "err");
     document.getElementById("delOverlay").classList.remove("open");
     doDeleteRow(d.sheetRow, d, reason, name);
@@ -1874,7 +1886,12 @@ async function checkPw() {
   confirmBtn.textContent = "확인 중...";
 
   try {
-    const res  = await fetch(SCRIPT_URL + "?action=login&pw=" + encodeURIComponent(input));
+    // 비밀번호를 주소(URL)가 아닌 본문에 담아 보냄. text/plain은 "단순 요청"이라 브라우저 사전확인(CORS) 없이 동작
+    const res  = await fetch(SCRIPT_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body:    JSON.stringify({ action: "login", pw: input })
+    });
     const data = await res.json();
     if (data.success && data.token) {
       _adminToken = data.token;
@@ -1882,7 +1899,7 @@ async function checkPw() {
       document.getElementById("pwInput").value = "";
       _enterAdminMode();
     } else {
-      showToast("비밀번호가 틀렸습니다", "err");
+      showToast(data.locked ? "로그인 시도가 너무 많아 잠겼습니다. 15분 후 다시 시도해주세요" : "비밀번호가 틀렸습니다", "err");
       document.getElementById("pwInput").value = "";
     }
   } catch(e) {

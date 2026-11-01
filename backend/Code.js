@@ -64,11 +64,43 @@ function svcActiveIn(svc, sKey, eKey) {
   return true;
 }
 
+// ===================================================
+// 입력값 검사 (2026-11 보안)   ※ index.html의 NAME_RE / cleanName과 반드시 동일 유지
+// 서명·수정자 이름: 한글 완성형·영문·띄어쓰기만, 1~20자 (숫자·기호·낱자 자모·수식 불가)
+// 사유: 자유 입력, 200자까지. = + - @ 로 시작하면 시트가 수식으로 읽지 않게 앞에 ' 를 붙임
+// ===================================================
+var NAME_RE       = /^[가-힣a-zA-Z ]{1,20}$/;
+var SIG_RULE_MSG  = "서명은 한글 또는 영문(띄어쓰기 포함) 20자 이내로 입력해주세요.";
+var NAME_RULE_MSG = "이름은 한글 또는 영문(띄어쓰기 포함) 20자 이내로 입력해주세요.";
+function cleanName(s) {
+  return String(s === null || s === undefined ? "" : s).replace(/\s+/g, " ").trim();
+}
+function isValidName(s) { return NAME_RE.test(s); }
+function safeText(s, maxLen) {
+  var t = String(s === null || s === undefined ? "" : s).replace(/[\r\n\t]+/g, " ").trim().slice(0, maxLen);
+  if (/^[=+\-@]/.test(t)) t = "'" + t;
+  return t;
+}
+
+// ── 관리자 로그인 시도 제한 ──
+// Apps Script는 접속자를 구분할 수 없어 "전체" 기준으로 센다.
+// 틀린 시도가 10번 쌓이면 15분간 모든 로그인 차단. 마지막으로 틀린 뒤 10분이 지나면 횟수 초기화.
+// 급히 풀어야 하면 Apps Script 편집기에서 unlockLogin 함수를 실행한다.
+var LOGIN_MAX_FAIL = 10;
+var LOGIN_FAIL_TTL = 600;   // 초
+var LOGIN_LOCK_TTL = 900;   // 초
+function unlockLogin() {
+  var cache = CacheService.getScriptCache();
+  cache.remove("login_lock");
+  cache.remove("login_fail");
+}
+
 function doPost(e) {
   try {
     var data   = JSON.parse(e.postData.contents);
     var action = data.action;
     if (action === "submit") return handleSubmit(data);
+    if (action === "login")  return handleLogin(data.pw || "");   // 비밀번호를 주소가 아닌 본문으로 받음
     return jsonResponse({ success: false, message: "Unknown action" });
   } catch (err) {
     return jsonResponse({ success: false, message: err.toString() });
@@ -80,7 +112,7 @@ function doGet(e) {
   var action = params.action || "";
 
   if (action === "ping") {
-    return jsonResponse({ success: true, message: "OK", version: "v5" });
+    return jsonResponse({ success: true, message: "OK", version: "v6" });
   }
   if (action === "login") {
     return handleLogin(params.pw || "");
@@ -112,13 +144,34 @@ function doGet(e) {
   }
 
   // action 없음 → 단순 확인용
-  return jsonResponse({ success: true, message: "Server running v4" });
+  return jsonResponse({ success: true, message: "Server running v6" });
 }
 
 // ── 관리자 로그인 → 1시간짜리 토큰 발급 ──
 function handleLogin(password) {
-  if (password !== ADMIN_PW)
+  var cache = CacheService.getScriptCache();
+  if (cache.get("login_lock") === "1")
+    return jsonResponse({ success: false, locked: true,
+      message: "로그인 시도가 너무 많아 잠겼습니다. 15분 후 다시 시도해주세요." });
+
+  if (!ADMIN_PW || String(password) !== ADMIN_PW) {
+    var lock = LockService.getScriptLock();
+    var got  = lock.tryLock(5000);
+    try {
+      var fails = (parseInt(cache.get("login_fail"), 10) || 0) + 1;
+      if (fails >= LOGIN_MAX_FAIL) {
+        cache.put("login_lock", "1", LOGIN_LOCK_TTL);
+        cache.remove("login_fail");
+      } else {
+        cache.put("login_fail", String(fails), LOGIN_FAIL_TTL);
+      }
+    } finally {
+      if (got) lock.releaseLock();
+    }
     return jsonResponse({ success: false, message: "비밀번호가 틀렸습니다." });
+  }
+
+  cache.remove("login_fail");
   var token = Utilities.getUuid();
   CacheService.getScriptCache().put("tok_" + token, "1", 3600); // 3600초 = 1시간
   return jsonResponse({ success: true, token: token });
@@ -132,6 +185,12 @@ function validateToken(token) {
 
 // ── 제출 처리 ──
 function handleSubmit(data) {
+  var sig      = cleanName(data.signature);
+  var modifier = cleanName(data.modifier);
+  var reason   = safeText(data.reason, 200);
+  if (modifier && !isValidName(modifier))
+    return jsonResponse({ success: false, message: NAME_RULE_MSG });
+
   var ss    = getSheet();
   var sheet = ss.getSheetByName(SHEET_NAME);
 
@@ -156,12 +215,20 @@ function handleSubmit(data) {
     Number(data.student) || 0,
     Number(data.teacher) || 0,
     Number(data.other)   || 0,
-    data.signature   || ""
+    sig
   ];
 
   var lastRow = sheet.getLastRow();
-  if (lastRow > 1) {
-    var values = sheet.getRange(2, 1, lastRow-1, 11).getValues();
+  var values  = lastRow > 1 ? sheet.getRange(2, 1, lastRow-1, 11).getValues() : [];
+
+  // 서명 규칙 검사. 단, 규칙이 생기기 전에 저장된 옛 서명(숫자·괄호 등)은
+  // 시트에 이미 있는 서명과 똑같을 때만 허용 → 관리자가 옛 기록을 수정할 수 있게
+  if (!isValidName(sig)) {
+    var legacy = sig !== "" && values.some(function(r) { return cleanName(r[10]) === sig; });
+    if (!legacy) return jsonResponse({ success: false, message: SIG_RULE_MSG });
+  }
+
+  if (values.length) {
     for (var i = 0; i < values.length; i++) {
       var rowDate = values[i][2] instanceof Date
         ? Utilities.formatDate(values[i][2], "America/New_York", "yyyy-MM-dd")
@@ -169,7 +236,7 @@ function handleSubmit(data) {
       // 예배명은 별칭 변환 후 비교 → 과거 "예꿈" 행을 "예꿈 유치부"로 수정해도 같은 행을 찾아 덮어씀(새 행 추가 방지)
       var rowSvc = canonSvc(values[i][3]);
       if (rowDate === (data.worshipDate||"").trim() && rowSvc === canonSvc(data.service)) {
-        saveHistory(ss, values[i], newRow, submitTime, data.reason || "", data.modifier || "");
+        saveHistory(ss, values[i], newRow, submitTime, reason, modifier);
         sheet.getRange(i+2, 1, 1, 11).setValues([newRow]);
         return jsonResponse({ success: true, message: "수정 완료" });
       }
@@ -229,9 +296,9 @@ function handleDelete(rowIndex, params) {
       params.dk||"", params.svc||"",
       Number(params.total)||0, Number(params.onsite)||0, Number(params.online)||0,
       Number(params.student)||0, Number(params.teacher)||0, Number(params.other)||0,
-      params.sig||"",
+      safeText(params.sig, 40),
       "","","","","","","",
-      params.reason||"", params.modifier||""
+      safeText(params.reason, 200), safeText(params.modifier, 40)
     ]);
   } catch(e) {}
 
