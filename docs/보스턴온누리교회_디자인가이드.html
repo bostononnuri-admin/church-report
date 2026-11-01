@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보스턴 온누리교회 — 디자인 가이드</title>
+<meta name="color-scheme" content="light">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+    background: #f0ede5;
+    color: #1c3254;
+    line-height: 1.6;
+    color-scheme: light;
+  }
+
+  /* ── 가이드 전용 레이아웃 ── */
+  .guide-wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+  .guide-hero {
+    background: #1c3254;
+    color: white;
+    padding: 48px 40px 44px;
+    border-radius: 20px;
+    margin-bottom: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .guide-hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 4px;
+    background: #b8892e;
+  }
+  .guide-hero h1 { font-size: 1.7rem; font-weight: 800; margin-bottom: 6px; }
+  .guide-hero p  { font-size: .92rem; opacity: .75; }
+  .guide-hero .badge {
+    display: inline-block;
+    background: rgba(184,137,46,.25);
+    border: 1px solid rgba(184,137,46,.5);
+    color: #FAEEDA;
+    font-size: .74rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+    letter-spacing: .4px;
+  }
+
+  .section { margin-bottom: 48px; }
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #1c3254;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #d6d1c3;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::before {
+    content: '';
+    width: 4px; height: 18px;
+    background: #b8892e;
+    border-radius: 2px;
+    display: block;
+  }
+
+  .row   { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+  .col2  { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .col3  { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  /* ── 색상 스와치 ── */
+  .swatch {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(28,50,84,.1);
+    background: white;
+  }
+  .swatch-color {
+    height: 60px;
+    display: flex;
+    align-items: flex-end;
+    padding: 8px 10px;
+  }
+  .swatch-hex {
+    font-size: .68rem;
+    font-weight: 700;
+    color: rgba(255,255,255,.85);
+    font-family: monospace;
+  }
+  .swatch-info { padding: 8px 10px 10px; }
+  .swatch-name  { font-size: .8rem; font-weight: 700; color: #1c3254; }
+  .swatch-usage { font-size: .72rem; color: #6e6a61; margin-top: 2px; }
+
+  /* ── 코드 블록 ── */
+  .code-block {
+    background: #1c3254;
+    color: #A5D6A7;
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: .8rem;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin-top: 10px;
+  }
+  .code-block .cm { color: rgba(255,255,255,.4); }  /* comment */
+  .code-block .ck { color: #80CBC4; }  /* key */
+  .code-block .cv { color: #FFD54F; }  /* value */
+  .code-block .cs { color: #F48FB1; }  /* selector */
+
+  /* ── 컴포넌트 미리보기 ── */
+  .preview-box {
+    background: white;
+    border: 1px solid #d6d1c3;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 10px;
+  }
+  .preview-label {
+    font-size: .72rem;
+    font-weight: 700;
+    color: #6e6a61;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 12px;
+  }
+
+  /* ── 실제 컴포넌트 미리보기 (시스템 CSS 그대로) ── */
+  .demo-hdr {
+    background: #1c3254;
+    color: white;
+    padding: 14px 20px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .demo-hdr::after {
+    content: ''; position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px; background: #b8892e;
+  }
+  .demo-hdr-bar {
+    width: 4px; height: 36px;
+    border-radius: 2px;
+    background: #b8892e;
+    flex-shrink: 0;
+  }
+  .demo-hdr-bar.ec  { background: #185FA5; }
+  .demo-hdr-bar.exr { background: #1B5E20; }
+  .demo-hdr-bar.lrf { background: #0d9488; }
+  .demo-hdr-text .name { font-size: 1rem; font-weight: 600; }
+  .demo-hdr-text .sub  { font-size: .75rem; opacity: .72; }
+  .demo-hdr-right { margin-left: auto; }
+
+  .demo-btn-back {
+    background: rgba(255,255,255,.12);
+    border: 1.5px solid rgba(255,255,255,.25);
+    color: white;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: .76rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .demo-card {
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 1px 4px rgba(28,50,84,.08);
+    border: 1px solid #d6d1c3;
+    overflow: hidden;
+  }
+  .demo-card-hdr {
+    padding: 13px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .demo-card-hdr.navy { background: #1c3254; color: white; }
+  .demo-card-hdr.ec   { background: #E6F1FB; color: #185FA5; }
+  .demo-card-hdr.exr  { background: #EAF3DE; color: #1B5E20; }
+  .demo-card-hdr.lrf  { background: #E1F5EE; color: #0d9488; }
+  .demo-card-hdr h3   { font-size: .92rem; font-weight: 700; }
+  .demo-card-hdr p    { font-size: .74rem; opacity: .75; margin-top: 2px; }
+  .demo-card-body { padding: 16px 18px; }
+
+  .demo-sn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .78rem; font-weight: 900;
+    flex-shrink: 0;
+  }
+  .demo-sn.navy-sn { background: #FAEEDA; color: #1c3254; }
+  .demo-sn.ec-sn   { background: #185FA5; color: white; }
+  .demo-sn.exr-sn  { background: #1B5E20; color: white; }
+  .demo-sn.lrf-sn  { background: #0d9488; color: white; }
+
+  .demo-btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .demo-btn {
+    border: none; border-radius: 10px;
+    padding: 10px 20px; font-size: .88rem;
+    font-weight: 700; cursor: pointer;
+    font-family: inherit;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .demo-btn.primary {
+    background: #1c3254; color: white;
+    box-shadow: 0 4px 14px rgba(0,48,122,.25);
+  }
+  .demo-btn.outline {
+    background: transparent;
+    border: 2px solid #1c3254;
+    color: #1c3254;
+  }
+  .demo-btn.danger {
+    background: #A32D2D; color: white;
+  }
+  .demo-btn.ghost {
+    background: transparent;
+    border: 1px solid #d6d1c3;
+    color: #1c3254;
+    font-weight: 500;
+  }
+  .demo-btn-submit {
+    width: 100%;
+    background: #1c3254;
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 15px;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    border-left: 5px solid #b8892e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 18px rgba(0,48,122,.28);
+  }
+
+  .demo-field { margin-bottom: 12px; }
+  .demo-field label { display: block; font-size: .84rem; font-weight: 600; margin-bottom: 5px; color: #1c3254; }
+  .demo-field input, .demo-field select, .demo-field textarea {
+    width: 100%;
+    border: 1.5px solid #d6d1c3;
+    border-radius: 9px;
+    padding: 10px 13px;
+    font-size: .9rem;
+    font-family: inherit;
+    color: #1c3254;
+    background: white;
+    outline: none;
+    color-scheme: light;
+  }
+  .demo-field input:focus { border-color: #3b5a8c; box-shadow: 0 0 0 3px #e7ebf2; }
+
+  .demo-badge {
+    display: inline-block;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: .72rem;
+    font-weight: 700;
+    border: 1px solid;
+  }
+  .demo-badge.ok      { background: #EFF5EA; color: #436B3D; border-color: #94C374; }
+  .demo-badge.pend    { background: #d4dff0; color: #1c3254; border-color: #7A9BC4; }
+  .demo-badge.review  { background: #FDF0DB; color: #A0611A; border-color: #E8943A; }
+  .demo-badge.reject  { background: #FAEDEC; color: #8B2424; border-color: #E07070; }
+  .demo-badge.na      { background: #EFEFEF; color: #7C7C7C; border-color: #D1D1D1; }
+
+  .demo-toast {
+    background: #1c3254;
+    color: white;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-size: .84rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 18px rgba(28,50,84,.32);
+  }
+
+  .demo-info-banner {
+    background: #E8F5E9;
+    border: 1.5px solid #A5D6A7;
+    border-left: 4px solid #2E7D32;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: .84rem;
+    color: #1B5E20;
+    font-weight: 600;
+  }
+
+  .spec-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .spec-table th, .spec-table td {
+    text-align: left;
+    padding: 9px 12px;
+    font-size: .82rem;
+    border-bottom: 1px solid #e8e4da;
+  }
+  .spec-table th { font-weight: 700; color: #6e6a61; background: #f7f5f0; }
+  .spec-table td:last-child { font-family: monospace; color: #185FA5; }
+
+  .tip {
+    background: #E6F1FB;
+    border-left: 4px solid #185FA5;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    font-size: .83rem;
+    color: #185FA5;
+    margin-top: 12px;
+  }
+  .tip strong { font-weight: 700; }
+
+  @media (max-width: 600px) {
+    .col2, .col3 { grid-template-columns: 1fr; }
+    .guide-hero { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="guide-wrap">
+
+  <!-- ── HERO ── -->
+  <div class="guide-hero">
+    <div class="badge">Boston Onnuri Church · Design System</div>
+    <h1>보스턴 온누리교회<br>통합 디자인 가이드</h1>
+    <p>행정·재정 시스템의 디자인 언어를 다른 웹페이지에 적용하기 위한 레퍼런스 문서</p>
+  </div>
+
+  <!-- ── 1. 디자인 철학 ── -->
+  <div class="section">
+    <div class="section-title">디자인 철학 &amp; 전체 느낌</div>
+    <div class="preview-box">
+      <p style="font-size:.9rem;line-height:1.9;color:#3b3530;">
+        <strong>키워드:</strong> 신뢰감 있는 공식적인 느낌 · 깔끔하고 절제된 미니멀리즘 · 한국어+영어 이중언어<br>
+        <strong>분위기:</strong> "교회 행정 시스템"답게 진지하지만, 딱딱하지 않고 따뜻한 아이보리 배경<br>
+        <strong>포인트:</strong> 진한 네이비(#1c3254) + 골드(#b8892e) 조합이 전체 브랜드 앵커<br>
+        <strong>색상 전략:</strong> 기능별로 고유 색(파랑/초록/청록/보라)을 부여해 시각적으로 구분
+      </p>
+    </div>
+  </div>
+
+  <!-- ── 2. 색상 팔레트 ── -->
+  <div class="section">
+    <div class="section-title">색상 팔레트</div>
+
+    <p class="preview-label" style="margin-bottom:10px;">브랜드 기본색</p>
+    <div class="col3" style="margin-bottom:20px;">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#1c3254;">
+          <span class="swatch-hex">#1c3254</span>
+        </div>
+        <div class="swatch-info">
+          <div class="swatch-name">Navy (네이비)</div>
+          <div class="swatch-usage">헤더 배경, 주요 버튼, 기본 텍스트</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#b8892e;">
+          <span class="swatch-hex">#b8892e</span>
+        </div>
+        <div class="swatch-info">
+          <div class="swatch-name">Gold (골드)</div>
+          <div class="swatch-usage">헤더 하단 포인트 바, 제출 버튼 왼쪽 강조</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#f0ede5;">
+          <span class="swatch-hex" style="color:#6e6a61;">#f0ede5</span>
+        </div>
+        <div class="swatch-info">
+          <div class="swatch-name">Ivory (아이보리)</div>
+          <div class="swatch-usage">전체 페이지 배경색</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="preview-label" style="margin-bottom:10px;">기능별 시스템 색상 (각 기능/페이지에 1개 지정)</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#185FA5;"><span class="swatch-hex">#185FA5</span></div>
+        <div class="swatch-info"><div class="swatch-name">지출결산 파랑</div><div class="swatch-usage">헤더 세로바, 카드헤더, 강조</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#1B5E20;"><span class="swatch-hex">#1B5E20</span></div>
+        <div class="swatch-info"><div class="swatch-name">행사계획서 초록</div><div class="swatch-usage">헤더 세로바, 카드헤더, 강조</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#0d9488;"><span class="swatch-hex">#0d9488</span></div>
+        <div class="swatch-info"><div class="swatch-name">영수증 청록</div><div class="swatch-usage">헤더 세로바, 카드헤더, 강조</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#4C1D95;"><span class="swatch-hex">#4C1D95</span></div>
+        <div class="swatch-info"><div class="swatch-name">결정의뢰 다크 보라</div><div class="swatch-usage">카드헤더, 버튼, 강조 (메인)</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#6D28D9;"><span class="swatch-hex">#6D28D9</span></div>
+        <div class="swatch-info"><div class="swatch-name">결정의뢰 미디엄 보라</div><div class="swatch-usage">페이지 헤더 세로바·하단선, 본문 부제</div></div>
+      </div>
+    </div>
+
+    <p class="preview-label" style="margin-bottom:10px;">카드 헤더 밝은 배경 (시스템색 + 연한 버전)</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#E6F1FB;"><span class="swatch-hex" style="color:#185FA5;">#E6F1FB</span></div>
+        <div class="swatch-info"><div class="swatch-name">EC 연파랑</div><div class="swatch-usage">카드 헤더 배경</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#EAF3DE;"><span class="swatch-hex" style="color:#1B5E20;">#EAF3DE</span></div>
+        <div class="swatch-info"><div class="swatch-name">EXR 연초록</div><div class="swatch-usage">카드 헤더 배경</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#E1F5EE;"><span class="swatch-hex" style="color:#0d9488;">#E1F5EE</span></div>
+        <div class="swatch-info"><div class="swatch-name">LRF 연청록</div><div class="swatch-usage">카드 헤더 배경</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#F5F3FF;"><span class="swatch-hex" style="color:#4C1D95;">#F5F3FF</span></div>
+        <div class="swatch-info"><div class="swatch-name">DR 연보라</div><div class="swatch-usage">카드 헤더 배경, 강조 박스</div></div>
+      </div>
+    </div>
+
+    <p class="preview-label" style="margin-bottom:10px;">DR 보조색 (테두리·필드 배경)</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#DDD6FE;"><span class="swatch-hex" style="color:#4C1D95;">#DDD6FE</span></div>
+        <div class="swatch-info"><div class="swatch-name">DR 악센트</div><div class="swatch-usage">번호 동그라미 배경, 이메일 헤더 배경, 본문·블록 헤더 테두리, PDF 승인 테이블 헤더 테두리</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#EDE9FE;"><span class="swatch-hex" style="color:#4C1D95;">#EDE9FE</span></div>
+        <div class="swatch-info"><div class="swatch-name">DR 연보라 강조</div><div class="swatch-usage">카드/입력창 테두리, 결정 근거 강조 박스, 이메일 블록 헤더 배경, PDF 승인 테이블 헤더 배경</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#FAF5FF;"><span class="swatch-hex" style="color:#4C1D95;">#FAF5FF</span></div>
+        <div class="swatch-info"><div class="swatch-name">DR 필드 배경</div><div class="swatch-usage">읽기전용 입력 배경 (가장 연한 보라)</div></div>
+      </div>
+    </div>
+
+    <p class="preview-label" style="margin-bottom:10px;">UI/상태색</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#d6d1c3;"><span class="swatch-hex" style="color:#6e6a61;">#d6d1c3</span></div>
+        <div class="swatch-info"><div class="swatch-name">Border</div><div class="swatch-usage">카드·입력창 테두리</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#6e6a61;"><span class="swatch-hex">#6e6a61</span></div>
+        <div class="swatch-info"><div class="swatch-name">Muted</div><div class="swatch-usage">보조 텍스트, 안내문</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#A32D2D;"><span class="swatch-hex">#A32D2D</span></div>
+        <div class="swatch-info"><div class="swatch-name">Danger (위험)</div><div class="swatch-usage">삭제·경고 버튼</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#B2DFDB;"><span class="swatch-hex" style="color:#0d9488;">#B2DFDB</span></div>
+        <div class="swatch-info"><div class="swatch-name">LRF Border</div><div class="swatch-usage">LRF 카드 테두리색</div></div>
+      </div>
+    </div>
+
+    <!-- DR 이메일/PDF 전용 색상 매핑 (2026-04 개편) -->
+    <p class="preview-label" style="margin-top:28px;margin-bottom:10px;">DR 이메일 색상 매핑</p>
+    <div style="border:1px solid #d6d1c3;border-radius:8px;padding:14px 18px;background:#fafafa;font-size:.85rem;line-height:1.8;">
+      <div style="margin-bottom:10px;"><strong style="color:#4C1D95;">이메일 헤더</strong> — 부드러운 톤다운 디자인</div>
+      <ul style="margin:0 0 12px 18px;padding:0;color:#444;">
+        <li>헤더 배경: <code style="background:#DDD6FE;color:#4C1D95;padding:1px 6px;border-radius:3px;">#DDD6FE</code> (DR 악센트)</li>
+        <li>"보스턴 온누리교회" 소라인: <code style="background:#4C1D95;color:#fff;padding:1px 6px;border-radius:3px;">#4C1D95 75% opacity</code></li>
+        <li>"결정의뢰서 | Decision Request" 라벨: <code style="background:#4C1D95;color:#fff;padding:1px 6px;border-radius:3px;">#4C1D95</code></li>
+        <li>[결정의뢰서] 제목 라인: <code style="background:#3B0764;color:#fff;padding:1px 6px;border-radius:3px;">#3B0764</code> (짙은 보라 - 강조)</li>
+        <li>부제 (rid · 신청인 · 팀): <code style="background:#4C1D95;color:#fff;padding:1px 6px;border-radius:3px;">#4C1D95 75% opacity</code></li>
+        <li>본문 박스 테두리 (2px): <code style="background:#DDD6FE;color:#4C1D95;padding:1px 6px;border-radius:3px;">#DDD6FE</code></li>
+      </ul>
+      <div style="margin-bottom:10px;"><strong style="color:#4C1D95;">결정 의뢰 내용 블록 헤더 (① 주제·②~⑤)</strong></div>
+      <ul style="margin:0 0 12px 18px;padding:0;color:#444;">
+        <li>블록 헤더 배경: <code style="background:#EDE9FE;color:#4C1D95;padding:1px 6px;border-radius:3px;">#EDE9FE</code></li>
+        <li>블록 헤더 텍스트: <code style="background:#4C1D95;color:#fff;padding:1px 6px;border-radius:3px;">#4C1D95</code></li>
+        <li>블록 외곽 테두리: <code style="background:#DDD6FE;color:#4C1D95;padding:1px 6px;border-radius:3px;">#DDD6FE</code> (2px)</li>
+      </ul>
+      <div style="margin-bottom:10px;"><strong style="color:#4C1D95;">승인 버튼 (유지)</strong></div>
+      <ul style="margin:0 0 0 18px;padding:0;color:#444;">
+        <li>승인 (1·2단계): <code style="background:#16a34a;color:#fff;padding:1px 6px;border-radius:3px;">#16a34a</code> &nbsp;|&nbsp; 운영위 최종승인 (3단계): <code style="background:#3B0764;color:#fff;padding:1px 6px;border-radius:3px;">#3B0764</code></li>
+        <li>재고: <code style="background:#d97706;color:#fff;padding:1px 6px;border-radius:3px;">#d97706</code> &nbsp;|&nbsp; 반려: <code style="background:#dc2626;color:#fff;padding:1px 6px;border-radius:3px;">#dc2626</code></li>
+      </ul>
+    </div>
+
+    <p class="preview-label" style="margin-top:28px;margin-bottom:10px;">DR PDF 색상 매핑</p>
+    <div style="border:1px solid #d6d1c3;border-radius:8px;padding:14px 18px;background:#fafafa;font-size:.85rem;line-height:1.8;">
+      <div style="margin-bottom:10px;"><strong style="color:#4C1D95;">제목·섹션 헤더 (유지)</strong></div>
+      <ul style="margin:0 0 12px 18px;padding:0;color:#444;">
+        <li>문서 제목 (22pt): <code style="background:#4C1D95;color:#fff;padding:1px 6px;border-radius:3px;">#4C1D95</code></li>
+        <li>섹션 헤더 (① 신청정보, 승인내역, ②결정의뢰내용, ③첨부자료, ④메모): <code style="background:#4C1D95;color:#fff;padding:1px 6px;border-radius:3px;">#4C1D95</code></li>
+        <li>② 결정 의뢰 내용 블록 제목 (배경·이유·영향·자원): <code style="background:#0f172a;color:#fff;padding:1px 6px;border-radius:3px;">#0f172a (검정)</code></li>
+      </ul>
+      <div style="margin-bottom:10px;"><strong style="color:#4C1D95;">승인 내역 테이블 (개편)</strong></div>
+      <ul style="margin:0 0 12px 18px;padding:0;color:#444;">
+        <li>헤더 행 배경: <code style="background:#EDE9FE;color:#4C1D95;padding:1px 6px;border-radius:3px;">#EDE9FE</code></li>
+        <li>헤더 행 텍스트: <code style="background:#4C1D95;color:#fff;padding:1px 6px;border-radius:3px;">#4C1D95</code> (기존 흰색에서 변경)</li>
+        <li>현재 단계 행 테두리: <code style="background:#DDD6FE;color:#4C1D95;padding:1px 6px;border-radius:3px;">#DDD6FE</code></li>
+      </ul>
+      <div style="margin-bottom:10px;"><strong style="color:#4C1D95;">※ 운영위원회 결정 근거 박스 (3단계 최종 승인 후, 승인 테이블 바로 아래)</strong></div>
+      <ul style="margin:0 0 0 18px;padding:0;color:#444;">
+        <li>박스 배경: <code style="background:#EDE9FE;color:#4C1D95;padding:1px 6px;border-radius:3px;">#EDE9FE</code></li>
+        <li>제목 + 본문 텍스트: <code style="background:#0f172a;color:#fff;padding:1px 6px;border-radius:3px;">#0f172a</code></li>
+      </ul>
+    </div>
+
+    <div class="code-block">
+<span class="cs">:root</span> {
+  <span class="cm">/* 브랜드 */</span>
+  <span class="ck">--navy</span>:  <span class="cv">#1c3254</span>;   <span class="cm">/* 헤더 배경, 버튼, 텍스트 */</span>
+  <span class="ck">--gold</span>:  <span class="cv">#b8892e</span>;   <span class="cm">/* 포인트 골드 (헤더 바, 제출 버튼) */</span>
+  <span class="ck">--bg</span>:    <span class="cv">#f0ede5</span>;   <span class="cm">/* 아이보리 배경 */</span>
+  <span class="ck">--white</span>: <span class="cv">#ffffff</span>;   <span class="cm">/* 카드 배경 */</span>
+  <span class="ck">--border</span>:<span class="cv">#d6d1c3</span>;   <span class="cm">/* 테두리 (따뜻한 베이지) */</span>
+  <span class="ck">--muted</span>: <span class="cv">#6e6a61</span>;   <span class="cm">/* 보조 텍스트 */</span>
+
+  <span class="cm">/* 모서리 반경 */</span>
+  <span class="ck">--r-sm</span>: <span class="cv">8px</span>;
+  <span class="ck">--r</span>:    <span class="cv">14px</span>;   <span class="cm">/* 카드 기본 */</span>
+  <span class="ck">--r-lg</span>: <span class="cv">20px</span>;
+
+  <span class="cm">/* 그림자 */</span>
+  <span class="ck">--sh</span>:   <span class="cv">0 1px 4px rgba(28,50,84,.08)</span>;    <span class="cm">/* 기본 */</span>
+  <span class="ck">--sh-m</span>: <span class="cv">0 4px 18px rgba(28,50,84,.12)</span>;  <span class="cm">/* 호버 */</span>
+
+  <span class="cm">/* 기능별 색상 (페이지/섹션마다 1개 지정) */</span>
+  <span class="ck">--sys</span>: <span class="cv">#185FA5</span>;  <span class="cm">/* ← 이 페이지의 시스템 색 */</span>
+  <span class="ck">--sys-l</span>: <span class="cv">#E6F1FB</span>; <span class="cm">/* 시스템 색 연한 버전 */</span>
+}</div>
+  </div>
+
+  <!-- ── 3. 헤더 ── -->
+  <div class="section">
+    <div class="section-title">헤더 (Header)</div>
+
+    <div class="preview-box">
+      <div class="preview-label">기본 헤더 (홈 / 골드 세로바)</div>
+      <div class="demo-hdr" style="margin-bottom:12px;">
+        <div class="demo-hdr-bar"></div>
+        <div class="demo-hdr-text">
+          <div class="name">보스턴 온누리교회 행정·재정 시스템</div>
+          <div class="sub">Boston Onnuri Church Admin &amp; Finance System</div>
+        </div>
+        <div class="demo-hdr-right">
+          <button class="demo-btn-back">관리자</button>
+        </div>
+      </div>
+
+      <div class="preview-label">기능별 헤더 (시스템색 세로바 + 홈 버튼)</div>
+      <div class="demo-hdr" style="margin-bottom:8px;">
+        <div class="demo-hdr-bar ec"></div>
+        <div class="demo-hdr-text">
+          <div class="name">지출 및 결산신청서 <span style="font-size:.78em;opacity:.82;">| Expense Report</span></div>
+          <div class="sub">Boston Onnuri Church</div>
+        </div>
+        <div class="demo-hdr-right">
+          <button class="demo-btn-back">← 홈 | Home</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="cm">/* 헤더 기본 구조 */</span>
+<span class="cs">.hdr</span> {
+  <span class="ck">background</span>: <span class="cv">#1c3254</span>;
+  <span class="ck">color</span>: <span class="cv">white</span>;
+  <span class="ck">padding</span>: <span class="cv">14px 20px</span>;
+  <span class="ck">position</span>: <span class="cv">relative</span>;
+  <span class="ck">overflow</span>: <span class="cv">hidden</span>;
+  <span class="ck">box-shadow</span>: <span class="cv">0 2px 12px rgba(28,50,84,.18)</span>;
+}
+<span class="cm">/* 하단 골드 띠 (3px) */</span>
+<span class="cs">.hdr::after</span> {
+  <span class="ck">content</span>: <span class="cv">''</span>;
+  <span class="ck">position</span>: <span class="cv">absolute</span>;
+  <span class="ck">bottom</span>: <span class="cv">0</span>; <span class="ck">left</span>: <span class="cv">0</span>; <span class="ck">right</span>: <span class="cv">0</span>;
+  <span class="ck">height</span>: <span class="cv">3px</span>;
+  <span class="ck">background</span>: <span class="cv">#b8892e</span>;
+}
+<span class="cm">/* 타이틀 좌측 세로바 (4px, 시스템색) */</span>
+<span class="cs">.hdr-brand</span> {
+  <span class="ck">position</span>: <span class="cv">relative</span>;
+  <span class="ck">padding-left</span>: <span class="cv">14px</span>;
+}
+<span class="cs">.hdr-brand::before</span> {
+  <span class="ck">content</span>: <span class="cv">''</span>;
+  <span class="ck">position</span>: <span class="cv">absolute</span>;
+  <span class="ck">left</span>: <span class="cv">0</span>; <span class="ck">top</span>: <span class="cv">4px</span>; <span class="ck">bottom</span>: <span class="cv">4px</span>;
+  <span class="ck">width</span>: <span class="cv">4px</span>;
+  <span class="ck">border-radius</span>: <span class="cv">2px</span>;
+  <span class="ck">background</span>: <span class="cv">var(--sys, #b8892e)</span>; <span class="cm">/* 기능별 색 */</span>
+}</div>
+  </div>
+
+  <!-- ── 4. 카드 ── -->
+  <div class="section">
+    <div class="section-title">카드 (Card)</div>
+
+    <div class="col2">
+      <div>
+        <div class="preview-label">기본 카드 (네이비 헤더)</div>
+        <div class="demo-card" style="margin-bottom:12px;">
+          <div class="demo-card-hdr navy">
+            <div class="demo-sn navy-sn">1</div>
+            <div>
+              <h3>신청 정보</h3>
+              <p>Application Info</p>
+            </div>
+          </div>
+          <div class="demo-card-body" style="font-size:.84rem;color:#6e6a61;">카드 본문 영역</div>
+        </div>
+      </div>
+      <div>
+        <div class="preview-label">시스템 카드 (연한 시스템색 헤더)</div>
+        <div class="demo-card">
+          <div class="demo-card-hdr ec">
+            <div class="demo-sn ec-sn">1</div>
+            <div>
+              <h3>신청 정보</h3>
+              <p>Application Info</p>
+            </div>
+          </div>
+          <div class="demo-card-body" style="font-size:.84rem;color:#6e6a61;">카드 본문 영역</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="cs">.card</span> {
+  <span class="ck">background</span>: <span class="cv">white</span>;
+  <span class="ck">border-radius</span>: <span class="cv">14px</span>;
+  <span class="ck">box-shadow</span>: <span class="cv">0 1px 4px rgba(28,50,84,.08)</span>;
+  <span class="ck">border</span>: <span class="cv">1px solid #d6d1c3</span>;
+  <span class="ck">overflow</span>: <span class="cv">hidden</span>;
+  <span class="ck">margin-bottom</span>: <span class="cv">16px</span>;
+}
+<span class="cs">.card-hdr</span> {
+  <span class="ck">background</span>: <span class="cv">var(--sys-l, #1c3254)</span>; <span class="cm">/* 연한 시스템색 */</span>
+  <span class="ck">color</span>: <span class="cv">var(--sys, white)</span>;
+  <span class="ck">padding</span>: <span class="cv">13px 18px</span>;
+  <span class="ck">display</span>: <span class="cv">flex</span>;
+  <span class="ck">align-items</span>: <span class="cv">center</span>;
+  <span class="ck">gap</span>: <span class="cv">12px</span>;
+}
+<span class="cm">/* 번호 원 */</span>
+<span class="cs">.sn</span> {
+  <span class="ck">background</span>: <span class="cv">var(--sys)</span>; <span class="ck">color</span>: <span class="cv">white</span>;
+  <span class="ck">width</span>: <span class="cv">28px</span>; <span class="ck">height</span>: <span class="cv">28px</span>;
+  <span class="ck">border-radius</span>: <span class="cv">50%</span>;
+  <span class="ck">display</span>: <span class="cv">flex</span>;
+  <span class="ck">align-items</span>: <span class="cv">center</span>; <span class="ck">justify-content</span>: <span class="cv">center</span>;
+  <span class="ck">font-size</span>: <span class="cv">.8rem</span>; <span class="ck">font-weight</span>: <span class="cv">900</span>;
+}</div>
+  </div>
+
+  <!-- ── 5. 버튼 ── -->
+  <div class="section">
+    <div class="section-title">버튼 (Buttons)</div>
+
+    <div class="preview-box">
+      <div class="preview-label">버튼 종류</div>
+      <div class="demo-btn-row" style="margin-bottom:14px;">
+        <button class="demo-btn primary">주요 버튼</button>
+        <button class="demo-btn outline">선택/취소</button>
+        <button class="demo-btn danger">삭제/위험</button>
+        <button class="demo-btn ghost">← 뒤로</button>
+      </div>
+      <div class="preview-label">제출 버튼 (전체 폭, 골드 포인트)</div>
+      <button class="demo-btn-submit">제출하기 | Submit</button>
+    </div>
+
+    <div class="code-block">
+<span class="cm">/* 기본 버튼 */</span>
+<span class="cs">.btn</span> {
+  <span class="ck">border</span>: <span class="cv">none</span>; <span class="ck">border-radius</span>: <span class="cv">10px</span>;
+  <span class="ck">padding</span>: <span class="cv">10px 20px</span>;
+  <span class="ck">font-size</span>: <span class="cv">.9rem</span>; <span class="ck">font-weight</span>: <span class="cv">700</span>;
+  <span class="ck">cursor</span>: <span class="cv">pointer</span>;
+  <span class="ck">transition</span>: <span class="cv">all .2s</span>;
+}
+<span class="cs">.btn-primary</span> { <span class="ck">background</span>: <span class="cv">#1c3254</span>; <span class="ck">color</span>: <span class="cv">white</span>; }
+<span class="cs">.btn-outline</span>  { <span class="ck">background</span>: <span class="cv">transparent</span>; <span class="ck">border</span>: <span class="cv">2px solid #1c3254</span>; <span class="ck">color</span>: <span class="cv">#1c3254</span>; }
+<span class="cs">.btn-danger</span>   { <span class="ck">background</span>: <span class="cv">#A32D2D</span>; <span class="ck">color</span>: <span class="cv">white</span>; }
+
+<span class="cm">/* 제출 버튼 (전체 폭, 골드 포인트) */</span>
+<span class="cs">.btn-submit</span> {
+  <span class="ck">width</span>: <span class="cv">100%</span>;
+  <span class="ck">background</span>: <span class="cv">#1c3254</span>;
+  <span class="ck">color</span>: <span class="cv">white</span>;
+  <span class="ck">border-radius</span>: <span class="cv">14px</span>;
+  <span class="ck">padding</span>: <span class="cv">15px</span>;
+  <span class="ck">font-size</span>: <span class="cv">1rem</span>; <span class="ck">font-weight</span>: <span class="cv">800</span>;
+  <span class="ck">border-left</span>: <span class="cv">5px solid #b8892e</span>; <span class="cm">/* ← 골드 포인트 */</span>
+  <span class="ck">box-shadow</span>: <span class="cv">0 4px 18px rgba(0,48,122,.28)</span>;
+}</div>
+  </div>
+
+  <!-- ── 6. 폼 ── -->
+  <div class="section">
+    <div class="section-title">입력 폼 (Form Fields)</div>
+
+    <div class="col2">
+      <div class="preview-box">
+        <div class="preview-label">입력 필드</div>
+        <div class="demo-field">
+          <label>신청자 이름</label>
+          <input type="text" placeholder="홍길동">
+        </div>
+        <div class="demo-field">
+          <label>사역팀</label>
+          <select><option>예배팀</option><option>찬양팀</option></select>
+        </div>
+      </div>
+      <div class="preview-box">
+        <div class="preview-label">안내 배너</div>
+        <div class="demo-info-banner">
+          💡 <strong>안내 사항</strong>: 신청 후 담당자의 승인이 필요합니다.<br>
+          <span style="font-size:.78em;font-weight:400;color:#2E7D32;">Approval required after submission.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="cs">.field input, .field select, .field textarea</span> {
+  <span class="ck">border</span>: <span class="cv">1.5px solid #d6d1c3</span>;
+  <span class="ck">border-radius</span>: <span class="cv">9px</span>;
+  <span class="ck">padding</span>: <span class="cv">10px 13px</span>;
+  <span class="ck">font-size</span>: <span class="cv">.91rem</span>;
+  <span class="ck">background</span>: <span class="cv">white</span>;
+  <span class="ck">color</span>: <span class="cv">#1c3254</span>;
+  <span class="ck">width</span>: <span class="cv">100%</span>;
+  <span class="ck">color-scheme</span>: <span class="cv">light</span>; <span class="cm">/* 다크모드 방지 */</span>
+}
+<span class="cs">.field input:focus</span> {
+  <span class="ck">border-color</span>: <span class="cv">#3b5a8c</span>;
+  <span class="ck">box-shadow</span>: <span class="cv">0 0 0 3px #e7ebf2</span>;
+  <span class="ck">outline</span>: <span class="cv">none</span>;
+}
+<span class="cm">/* 안내 배너 */</span>
+<span class="cs">.info-banner</span> {
+  <span class="ck">background</span>: <span class="cv">#E8F5E9</span>;
+  <span class="ck">border</span>: <span class="cv">1.5px solid #A5D6A7</span>;
+  <span class="ck">border-left</span>: <span class="cv">4px solid #2E7D32</span>;
+  <span class="ck">border-radius</span>: <span class="cv">10px</span>;
+  <span class="ck">padding</span>: <span class="cv">12px 16px</span>;
+  <span class="ck">color</span>: <span class="cv">#1B5E20</span>;
+}</div>
+  </div>
+
+  <!-- ── 7. 상태 배지 ── -->
+  <div class="section">
+    <div class="section-title">상태 배지 (Status Badges)</div>
+
+    <div class="preview-box">
+      <div class="demo-btn-row">
+        <span class="demo-badge ok">✓ 승인완료</span>
+        <span class="demo-badge pend">대기중</span>
+        <span class="demo-badge review">재고</span>
+        <span class="demo-badge reject">반려</span>
+        <span class="demo-badge na">예정</span>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="cm">/* 공통 배지 */</span>
+<span class="cs">.badge</span> {
+  <span class="ck">display</span>: <span class="cv">inline-block</span>;
+  <span class="ck">border-radius</span>: <span class="cv">20px</span>;
+  <span class="ck">padding</span>: <span class="cv">3px 10px</span>;
+  <span class="ck">font-size</span>: <span class="cv">.72rem</span>;
+  <span class="ck">font-weight</span>: <span class="cv">700</span>;
+  <span class="ck">border</span>: <span class="cv">1px solid</span>;
+}
+<span class="cm">/* 상태별 */</span>
+<span class="cs">.badge-ok</span>     { <span class="ck">background</span>: <span class="cv">#EFF5EA</span>; <span class="ck">color</span>: <span class="cv">#436B3D</span>; <span class="ck">border-color</span>: <span class="cv">#94C374</span>; }
+<span class="cs">.badge-pend</span>   { <span class="ck">background</span>: <span class="cv">#d4dff0</span>; <span class="ck">color</span>: <span class="cv">#1c3254</span>; <span class="ck">border-color</span>: <span class="cv">#7A9BC4</span>; }
+<span class="cs">.badge-review</span> { <span class="ck">background</span>: <span class="cv">#FDF0DB</span>; <span class="ck">color</span>: <span class="cv">#A0611A</span>; <span class="ck">border-color</span>: <span class="cv">#E8943A</span>; }
+<span class="cs">.badge-reject</span> { <span class="ck">background</span>: <span class="cv">#FAEDEC</span>; <span class="ck">color</span>: <span class="cv">#8B2424</span>; <span class="ck">border-color</span>: <span class="cv">#E07070</span>; }
+<span class="cs">.badge-na</span>     { <span class="ck">background</span>: <span class="cv">#EFEFEF</span>; <span class="ck">color</span>: <span class="cv">#7C7C7C</span>; <span class="ck">border-color</span>: <span class="cv">#D1D1D1</span>; }</div>
+  </div>
+
+  <!-- ── 8. 타이포그래피 ── -->
+  <div class="section">
+    <div class="section-title">타이포그래피 &amp; 간격</div>
+
+    <div class="preview-box">
+      <table class="spec-table">
+        <tr><th>요소</th><th>크기</th><th>굵기</th><th>색상</th></tr>
+        <tr><td>헤더 타이틀</td><td>1.05rem</td><td>600</td><td>#ffffff</td></tr>
+        <tr><td>헤더 부제목</td><td>.78rem</td><td>400</td><td>rgba(255,255,255,.72)</td></tr>
+        <tr><td>카드 헤더 h2</td><td>.96rem</td><td>700</td><td>시스템색</td></tr>
+        <tr><td>카드 헤더 p</td><td>.78rem</td><td>400</td><td>시스템색 opacity .75</td></tr>
+        <tr><td>레이블</td><td>.84rem</td><td>600</td><td>#1c3254</td></tr>
+        <tr><td>입력값</td><td>.91rem</td><td>400</td><td>#1c3254</td></tr>
+        <tr><td>보조 안내문</td><td>.83rem</td><td>400</td><td>#6e6a61</td></tr>
+        <tr><td>폰트 패밀리</td><td colspan="3">-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif</td></tr>
+      </table>
+    </div>
+
+    <div class="preview-box" style="margin-top:12px;">
+      <table class="spec-table">
+        <tr><th>규격</th><th>값</th><th>용도</th></tr>
+        <tr><td>페이지 최대 폭</td><td>820px</td><td>본문 영역</td></tr>
+        <tr><td>카드 모서리</td><td>14px</td><td>기본 카드</td></tr>
+        <tr><td>버튼 모서리</td><td>10px</td><td>일반 버튼</td></tr>
+        <tr><td>입력창 모서리</td><td>9px</td><td>폼 필드</td></tr>
+        <tr><td>카드 간격</td><td>16px</td><td>margin-bottom</td></tr>
+        <tr><td>페이지 패딩</td><td>20px 16px 60px</td><td>상/좌우/하단</td></tr>
+        <tr><td>헤더 하단 바</td><td>3px (골드)</td><td>브랜드 아이덴티티</td></tr>
+        <tr><td>카드 세로바</td><td>6px (시스템색)</td><td>좌측 카테고리 구분</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 9. 다크모드 방지 ── -->
+  <div class="section">
+    <div class="section-title">다크모드 방지 (필수)</div>
+    <div class="tip">
+      <strong>중요:</strong> 이 디자인은 아이보리 배경을 핵심 요소로 사용하므로, 사용자의 OS 다크모드 설정에 영향받지 않도록 반드시 아래 코드를 적용해야 합니다.
+    </div>
+    <div class="code-block">
+<span class="cm">&lt;!-- HTML head에 추가 --&gt;</span>
+&lt;<span class="ck">meta</span> <span class="cv">name</span>="color-scheme" <span class="cv">content</span>="light"&gt;
+
+<span class="cm">/* CSS */</span>
+<span class="cs">:root</span>   { <span class="ck">color-scheme</span>: <span class="cv">light</span>; }
+<span class="cs">html</span>    { <span class="ck">background</span>: <span class="cv">#f0ede5</span>; <span class="ck">color-scheme</span>: <span class="cv">light</span>; }
+<span class="cs">body</span>    { <span class="ck">background</span>: <span class="cv">#f0ede5</span>; <span class="ck">color</span>: <span class="cv">#1c3254</span>; <span class="ck">color-scheme</span>: <span class="cv">light</span>; }
+<span class="cs">input, select, textarea</span> { <span class="ck">color-scheme</span>: <span class="cv">light</span>; }</div>
+  </div>
+
+  <!-- ── 10. 새 페이지 적용 방법 ── -->
+  <div class="section">
+    <div class="section-title">새 웹페이지에 적용하는 방법</div>
+    <div class="preview-box">
+      <p style="font-size:.88rem;line-height:2;color:#3b3530;">
+        <strong>① 시스템 색 1개 지정</strong> — 해당 페이지의 기능을 대표하는 색을 정해 <code style="background:#f0ede5;padding:2px 6px;border-radius:4px;font-size:.82rem;">--sys</code> 변수에 할당<br>
+        &nbsp;&nbsp;&nbsp;예) 인원계수 → 주황 계열, 장소예약 → 인디고 계열, 행사 신청서 → EXR 초록<br><br>
+        <strong>② :root 변수 복사</strong> — 위 CSS 변수 블록을 그대로 사용<br><br>
+        <strong>③ 헤더 구조 적용</strong> — 네이비 배경 + 골드 하단 바 + 시스템 세로바<br><br>
+        <strong>④ 카드 컴포넌트 사용</strong> — 흰색 카드 + 시스템색 카드 헤더 + 번호 원<br><br>
+        <strong>⑤ 버튼/폼 스타일 적용</strong> — 위 코드 그대로 복사<br><br>
+        <strong>⑥ 다크모드 방지</strong> — meta 태그 + color-scheme:light 필수
+      </p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
